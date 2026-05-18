@@ -1,0 +1,85 @@
+package cmd
+
+import (
+	"fmt"
+	"os"
+	"os/exec"
+	"path/filepath"
+
+	"github.com/dlahoza/pluginart/pkg/schema"
+)
+
+func runGenClientPython(schemaPath string, parsed *schema.Schema, contractHash string) error {
+	outDir := genClientFlagOut
+	if err := os.MkdirAll(outDir, 0o755); err != nil {
+		return fmt.Errorf("create output dir: %w", err)
+	}
+
+	if err := runFlatcPython(schemaPath, outDir); err != nil {
+		return fmt.Errorf("flatc: %w", err)
+	}
+
+	data := clientTemplateData{
+		Namespace:    parsed.Namespace,
+		Methods:      parsed.Methods,
+		ContractHash: contractHash,
+	}
+
+	outFile := filepath.Join(outDir, parsed.Namespace+"_client.py")
+	if err := renderToFile(pyClientTmpl, data, outFile); err != nil {
+		return err
+	}
+
+	fmt.Printf("✓ Python client written to %s/\n", outDir)
+	return nil
+}
+
+func runGenPluginPython(schemaPath string, parsed *schema.Schema, contractHash string) error {
+	outDir := genPluginFlagOut
+	if outDir == "" {
+		outDir = "./" + genPluginFlagName + "-plugin-py"
+	}
+	if err := os.MkdirAll(outDir, 0o755); err != nil {
+		return fmt.Errorf("create output dir: %w", err)
+	}
+
+	fbOutDir := filepath.Join(outDir, "fb")
+	if err := runFlatcPython(schemaPath, fbOutDir); err != nil {
+		return fmt.Errorf("flatc: %w", err)
+	}
+
+	data := pluginTemplateData{
+		Name:         genPluginFlagName,
+		Namespace:    parsed.Namespace,
+		Methods:      parsed.Methods,
+		ContractHash: contractHash,
+	}
+
+	files := []struct {
+		tmpl string
+		name string
+	}{
+		{pyPluginTmpl, "plugin.py"},
+		{pyHandlerTmpl, "handler.py"},
+		{pyRequirementsTmpl, "requirements.txt"},
+		{pyDockerfileTmpl, "Dockerfile"},
+	}
+	for _, f := range files {
+		if err := renderToFile(f.tmpl, data, filepath.Join(outDir, f.name)); err != nil {
+			return err
+		}
+	}
+
+	fmt.Printf("✓ Python plugin skeleton written to %s/\n", outDir)
+	return nil
+}
+
+func runFlatcPython(schemaPath, outDir string) error {
+	if err := os.MkdirAll(outDir, 0o755); err != nil {
+		return err
+	}
+	cmd := exec.Command("flatc", "--python", "-o", outDir, schemaPath)
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	return cmd.Run()
+}

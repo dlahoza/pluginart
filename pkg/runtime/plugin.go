@@ -41,6 +41,7 @@ type plugin struct {
 	client       *protocol.Client
 	cmd          *exec.Cmd
 	cancelHealth context.CancelFunc
+	containerID  string
 	mu           sync.Mutex
 }
 
@@ -103,6 +104,8 @@ func (p *plugin) start(ctx context.Context) error {
 		return p.startBinary(ctx)
 	case "remote":
 		return p.startRemote(ctx)
+	case "docker":
+		return p.startDocker(ctx)
 	default:
 		return fmt.Errorf("unsupported plugin type %q", p.cfg.Type)
 	}
@@ -215,6 +218,92 @@ func (p *plugin) startRemote(ctx context.Context) error {
 	return nil
 }
 
+func (p *plugin) startDocker(ctx context.Context) error {
+	dialer, err := transport.NewTCP("")
+	if err != nil {
+		return fmt.Errorf("allocate tcp port for %q: %w", p.cfg.Name, err)
+	}
+
+	args := []string{"run", "-d", "--network", "host", "-e", "PLUGIN_ADDR=" + dialer.Addr()}
+	for k, v := range p.cfg.Env {
+		args = append(args, "-e", k+"="+v)
+	}
+	if p.cfg.Resources.Memory != "" {
+		args = append(args, "--memory", p.cfg.Resources.Memory)
+	}
+	if p.cfg.Resources.CPUs != "" {
+		args = append(args, "--cpus", p.cfg.Resources.CPUs)
+	}
+	args = append(args, p.cfg.Image)
+	args = append(args, p.cfg.Args...)
+
+	out, err := exec.CommandContext(ctx, "docker", args...).Output()
+	if err != nil {
+		return fmt.Errorf("docker run %q: %w", p.cfg.Name, err)
+	}
+	containerID := strings.TrimSpace(string(out))
+
+	logsCmd := exec.Command("docker", "logs", "-f", containerID)
+	logsStdout, err := logsCmd.StdoutPipe()
+	if err != nil {
+		return fmt.Errorf("docker logs pipe for %q: %w", p.cfg.Name, err)
+	}
+	if err := logsCmd.Start(); err != nil {
+		return fmt.Errorf("docker logs start for %q: %w", p.cfg.Name, err)
+	}
+
+	ready := make(chan struct{}, 1)
+	procDone := make(chan error, 1)
+
+	go func() {
+		scanner := bufio.NewScanner(logsStdout)
+		for scanner.Scan() {
+			if strings.TrimSpace(scanner.Text()) == "READY" {
+				ready <- struct{}{}
+				return
+			}
+		}
+	}()
+
+	go func() {
+		procDone <- logsCmd.Wait()
+	}()
+
+	startCtx, cancel := context.WithTimeout(ctx, p.startupTimeout)
+	defer cancel()
+
+	select {
+	case <-ready:
+	case err := <-procDone:
+		if err != nil {
+			return fmt.Errorf("plugin %q docker logs exited before READY: %w", p.cfg.Name, err)
+		}
+		return fmt.Errorf("plugin %q docker logs exited before READY", p.cfg.Name)
+	case <-startCtx.Done():
+		_ = logsCmd.Process.Kill()
+		return fmt.Errorf("plugin %q startup timeout", p.cfg.Name)
+	}
+
+	dialCtx, dialCancel := context.WithTimeout(ctx, p.startupTimeout)
+	defer dialCancel()
+
+	if err := p.connect(dialCtx, dialer); err != nil {
+		return err
+	}
+
+	p.mu.Lock()
+	p.containerID = containerID
+	p.mu.Unlock()
+
+	hctx, hcancel := context.WithCancel(context.Background())
+	p.mu.Lock()
+	p.cancelHealth = hcancel
+	p.mu.Unlock()
+	go p.runHealthCheck(hctx)
+
+	return nil
+}
+
 func (p *plugin) runHealthCheck(ctx context.Context) {
 	ticker := time.NewTicker(p.healthInterval)
 	defer ticker.Stop()
@@ -250,7 +339,7 @@ func (p *plugin) runHealthCheck(ctx context.Context) {
 			maxRestarts := p.maxRestarts
 			p.mu.Unlock()
 
-			if p.cfg.Type != "binary" && p.cfg.Type != "" {
+			if p.cfg.Type != "binary" {
 				continue
 			}
 
@@ -297,9 +386,11 @@ func (p *plugin) shutdown(ctx context.Context) error {
 	cancel := p.cancelHealth
 	client := p.client
 	cmd := p.cmd
+	containerID := p.containerID
 	p.client = nil
 	p.cmd = nil
 	p.cancelHealth = nil
+	p.containerID = ""
 	p.mu.Unlock()
 
 	if cancel != nil {
@@ -308,6 +399,14 @@ func (p *plugin) shutdown(ctx context.Context) error {
 
 	if client != nil {
 		_ = client.Close()
+	}
+
+	if containerID != "" {
+		shutCtx, shutCancel := context.WithTimeout(ctx, p.shutdownTimeout)
+		defer shutCancel()
+		_ = exec.CommandContext(shutCtx, "docker", "stop", containerID).Run()
+		_ = exec.Command("docker", "rm", containerID).Run()
+		return nil
 	}
 
 	if cmd == nil || cmd.Process == nil {

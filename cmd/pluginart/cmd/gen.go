@@ -32,7 +32,7 @@ var (
 )
 
 func init() {
-	genClientCmd.Flags().StringVar(&genClientFlagLang, "lang", "", "target language (only 'go' is supported in v0.1)")
+	genClientCmd.Flags().StringVar(&genClientFlagLang, "lang", "", "target language (go, python, typescript)")
 	genClientCmd.Flags().StringVar(&genClientFlagSchema, "schema", "./schema/*.fbs", "path to .fbs schema file")
 	genClientCmd.Flags().StringVar(&genClientFlagOut, "out", "./gen/go", "output directory")
 	_ = genClientCmd.MarkFlagRequired("lang")
@@ -46,10 +46,6 @@ type clientTemplateData struct {
 }
 
 func runGenClient(_ *cobra.Command, _ []string) error {
-	if genClientFlagLang != "go" {
-		return fmt.Errorf("only 'go' is supported in v0.1")
-	}
-
 	schemaPath, err := resolveSchema(genClientFlagSchema)
 	if err != nil {
 		return err
@@ -69,6 +65,19 @@ func runGenClient(_ *cobra.Command, _ []string) error {
 		return fmt.Errorf("parse schema: %w", err)
 	}
 
+	switch genClientFlagLang {
+	case "go":
+		return runGenClientGo(schemaPath, parsed, contractHash)
+	case "python":
+		return runGenClientPython(schemaPath, parsed, contractHash)
+	case "typescript":
+		return runGenClientTypeScript(schemaPath, parsed, contractHash)
+	default:
+		return fmt.Errorf("unsupported language %q (supported: go, python, typescript)", genClientFlagLang)
+	}
+}
+
+func runGenClientGo(schemaPath string, parsed *schema.Schema, contractHash string) error {
 	outDir := filepath.Join(genClientFlagOut, parsed.Namespace)
 	if err := os.MkdirAll(outDir, 0o755); err != nil {
 		return fmt.Errorf("create output dir: %w", err)
@@ -113,7 +122,7 @@ var (
 )
 
 func init() {
-	genPluginCmd.Flags().StringVar(&genPluginFlagLang, "lang", "", "target language (only 'go' is supported in v0.1)")
+	genPluginCmd.Flags().StringVar(&genPluginFlagLang, "lang", "", "target language (go, python, typescript)")
 	genPluginCmd.Flags().StringVar(&genPluginFlagName, "name", "", "plugin name")
 	genPluginCmd.Flags().StringVar(&genPluginFlagSchema, "schema", "./schema/*.fbs", "path to .fbs schema file")
 	genPluginCmd.Flags().StringVar(&genPluginFlagOut, "out", "", "output directory (default ./<name>-plugin)")
@@ -130,10 +139,6 @@ type pluginTemplateData struct {
 }
 
 func runGenPlugin(_ *cobra.Command, _ []string) error {
-	if genPluginFlagLang != "go" {
-		return fmt.Errorf("only 'go' is supported in v0.1")
-	}
-
 	schemaPath, err := resolveSchema(genPluginFlagSchema)
 	if err != nil {
 		return err
@@ -153,6 +158,19 @@ func runGenPlugin(_ *cobra.Command, _ []string) error {
 		return fmt.Errorf("parse schema: %w", err)
 	}
 
+	switch genPluginFlagLang {
+	case "go":
+		return runGenPluginGo(schemaPath, parsed, contractHash)
+	case "python":
+		return runGenPluginPython(schemaPath, parsed, contractHash)
+	case "typescript":
+		return runGenPluginTypeScript(schemaPath, parsed, contractHash)
+	default:
+		return fmt.Errorf("unsupported language %q (supported: go, python, typescript)", genPluginFlagLang)
+	}
+}
+
+func runGenPluginGo(schemaPath string, parsed *schema.Schema, contractHash string) error {
 	outDir := genPluginFlagOut
 	if outDir == "" {
 		outDir = "./" + genPluginFlagName + "-plugin"
