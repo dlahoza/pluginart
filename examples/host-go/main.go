@@ -27,6 +27,11 @@ func main() {
 	if err != nil {
 		log.Fatalf("call echo: %v", err)
 	}
+	fmt.Printf("echo (go):     %s\n", resp)
 
-	fmt.Printf("echo response: %s\n", resp)
+	resp, err = manager.Call(context.Background(), "echo-py", []byte("hello from host"))
+	if err != nil {
+		log.Fatalf("call echo-py: %v", err)
+	}
+	fmt.Printf("echo (python): %s\n", resp)
 }

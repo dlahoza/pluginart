@@ -25,6 +25,11 @@ func runGenClientPython(schemaPath string, parsed *schema.Schema, contractHash s
 		ContractHash: contractHash,
 	}
 
+	wireData := struct{ ContractHash string }{ContractHash: contractHash}
+	if err := renderToFile(pyWireTmpl, wireData, filepath.Join(outDir, "pluginart_wire.py")); err != nil {
+		return err
+	}
+
 	outFile := filepath.Join(outDir, parsed.Namespace+"_client.py")
 	if err := renderToFile(pyClientTmpl, data, outFile); err != nil {
 		return err
@@ -59,6 +64,7 @@ func runGenPluginPython(schemaPath string, parsed *schema.Schema, contractHash s
 		tmpl string
 		name string
 	}{
+		{pyWireTmpl, "pluginart_wire.py"},
 		{pyPluginTmpl, "plugin.py"},
 		{pyHandlerTmpl, "handler.py"},
 		{pyRequirementsTmpl, "requirements.txt"},
