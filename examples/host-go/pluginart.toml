@@ -1,0 +1,14 @@
+version = 1
+
+[defaults]
+startup_timeout     = "5s"
+shutdown_timeout    = "5s"
+health_interval     = "30s"
+max_restarts        = 3
+restart_backoff_max = "10s"
+max_message_bytes   = 1048576
+
+[[plugins]]
+name = "echo"
+type = "binary"
+path = "../plugin-go/plugin-go"

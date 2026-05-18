@@ -1,0 +1,59 @@
+version: "2"
+
+linters:
+  enable:
+    - govet
+    - staticcheck
+    - errcheck
+    - ineffassign
+    - misspell
+    - revive
+    - gosec
+    - prealloc
+    - gocritic
+
+  settings:
+    misspell:
+      locale: UK
+
+    gosec:
+      excludes:
+        - G204  # exec.Command with variable args is intentional (flatc invocation, plugin exec)
+
+    revive:
+      rules:
+        - name: exported
+        - name: var-naming
+        - name: unused-parameter
+        - name: error-return
+        - name: indent-error-flow
+
+    gocritic:
+      enabled-tags:
+        - diagnostic
+        - performance
+
+  exclusions:
+    rules:
+      # Generated FlatBuffers code — do not lint
+      - path: pkg/protocol/fb/
+        linters:
+          - all
+
+      # Test files get more latitude
+      - path: _test\.go
+        linters:
+          - errcheck
+          - gosec
+
+      # CLI codegen tool writes source files and directories world-readable by design
+      - path: cmd/pluginart/
+        linters:
+          - gosec
+        text: "G30[16]"
+
+      # Schema and codegen helpers read user-supplied file paths by design
+      - path: (pkg/schema/|cmd/pluginart/)
+        linters:
+          - gosec
+        text: "G304"

@@ -1,0 +1,30 @@
+// pluginart.schema.fbs
+// Runtime-internal wire-protocol messages.
+// Compiled to Go: flatc --go --gen-mutable -o pkg/protocol/fb pluginart.schema.fbs
+
+namespace pluginart;
+
+table HandshakeRequest {
+  contract_hash:    string (required);
+  plugin_name:      string (required);
+  protocol_version: uint16 = 1;
+}
+
+table HandshakeResponse {
+  ok:    bool;
+  error: string;
+}
+
+table Ping {
+  seq: uint64;
+}
+
+table Pong {
+  seq: uint64;
+}
+
+table PluginError {
+  code:    uint16;
+  message: string (required);
+  retry:   bool;
+}

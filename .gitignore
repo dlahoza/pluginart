@@ -1,0 +1,17 @@
+# Build outputs
+/pluginart
+*.exe
+
+# Examples — compiled binaries
+/examples/plugin-go/plugin-go
+/examples/host-go/host-go
+
+# macOS
+.DS_Store
+
+# Editor
+.idea/
+.vscode/
+*.swp
+
+PRD.md

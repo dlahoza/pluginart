@@ -1,0 +1,68 @@
+package protocol
+
+import (
+	"encoding/binary"
+	"fmt"
+	"io"
+	"net"
+	"sync"
+)
+
+const (
+	maxFrameSize = 4 * 1024 * 1024 // 4 MiB
+	headerSize   = 9               // 4 magic + 4 length + 1 flags
+)
+
+var magic = [4]byte{0x50, 0x4C, 0x47, 0x4E}
+
+type conn struct {
+	c net.Conn
+}
+
+// lockedConn wraps conn with a mutex for serialised send/recv round-trips.
+type lockedConn struct {
+	mu sync.Mutex
+	conn
+}
+
+func newConn(c net.Conn) Conn {
+	return &lockedConn{conn: conn{c: c}}
+}
+
+
+func (c *conn) Send(msgType MsgType, payload []byte) error {
+	if len(payload) > maxFrameSize {
+		return fmt.Errorf("payload %d bytes exceeds max frame size", len(payload))
+	}
+	buf := make([]byte, headerSize+len(payload))
+	copy(buf[:4], magic[:])
+	binary.LittleEndian.PutUint32(buf[4:8], uint32(len(payload))) //nolint:gosec // len is bounded by maxFrameSize check above
+	buf[8] = byte(msgType)
+	copy(buf[9:], payload)
+	_, err := c.c.Write(buf)
+	return err
+}
+
+func (c *conn) Recv() (MsgType, []byte, error) {
+	var hdr [headerSize]byte
+	if _, err := io.ReadFull(c.c, hdr[:]); err != nil {
+		return 0, nil, err
+	}
+	if hdr[0] != magic[0] || hdr[1] != magic[1] || hdr[2] != magic[2] || hdr[3] != magic[3] {
+		return 0, nil, fmt.Errorf("invalid magic bytes")
+	}
+	length := binary.LittleEndian.Uint32(hdr[4:8])
+	if length > maxFrameSize {
+		return 0, nil, fmt.Errorf("frame length %d exceeds max frame size", length)
+	}
+	msgType := MsgType(hdr[8])
+	payload := make([]byte, length)
+	if _, err := io.ReadFull(c.c, payload); err != nil {
+		return 0, nil, err
+	}
+	return msgType, payload, nil
+}
+
+func (c *conn) Close() error {
+	return c.c.Close()
+}
