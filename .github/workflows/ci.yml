@@ -194,6 +194,24 @@ jobs:
           echo "$output" | grep -qF 'repeat (python): hahaha'
           echo "$output" | grep -qF 'repeat (ts):     hahaha'
 
+  benchmark-host-go:
+    name: "Benchmark: host-go repeat Docker plugins"
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: examples/host-go/go.mod
+      - name: Build repeat Docker plugins
+        run: |
+          docker build -f examples/plugin-repeat-go/Dockerfile -t pluginart-repeat-go:local .
+          docker build -f examples/plugin-repeat-py/Dockerfile -t pluginart-repeat-py:local .
+          docker build -f examples/plugin-repeat-ts/Dockerfile -t pluginart-repeat-ts:local .
+      - name: Run repeat communication benchmarks
+        run: |
+          cd examples/host-go
+          go test -run TestRepeatDockerMemoryGrowth -bench BenchmarkRepeatDockerComparison -benchmem -benchtime=100x -count=1
+
   integration-host-ts:
     name: "Integration: host-ts → plugin-go + plugin-py + plugin-ts"
     runs-on: ubuntu-latest

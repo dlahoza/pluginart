@@ -29,18 +29,34 @@ func newConn(c net.Conn) Conn {
 	return &lockedConn{conn: conn{c: c}}
 }
 
-
 func (c *conn) Send(msgType MsgType, payload []byte) error {
 	if len(payload) > maxFrameSize {
 		return fmt.Errorf("payload %d bytes exceeds max frame size", len(payload))
 	}
-	buf := make([]byte, headerSize+len(payload))
-	copy(buf[:4], magic[:])
-	binary.LittleEndian.PutUint32(buf[4:8], uint32(len(payload))) //nolint:gosec // len is bounded by maxFrameSize check above
-	buf[8] = byte(msgType)
-	copy(buf[9:], payload)
-	_, err := c.c.Write(buf)
-	return err
+	var hdr [headerSize]byte
+	copy(hdr[:4], magic[:])
+	binary.LittleEndian.PutUint32(hdr[4:8], uint32(len(payload))) //nolint:gosec // len is bounded by maxFrameSize check above
+	hdr[8] = byte(msgType)
+	if len(payload) == 0 {
+		n, err := c.c.Write(hdr[:])
+		if err != nil {
+			return err
+		}
+		if n != headerSize {
+			return io.ErrShortWrite
+		}
+		return nil
+	}
+
+	bufs := net.Buffers{hdr[:], payload}
+	n, err := bufs.WriteTo(c.c)
+	if err != nil {
+		return err
+	}
+	if want := int64(headerSize + len(payload)); n != want {
+		return io.ErrShortWrite
+	}
+	return nil
 }
 
 func (c *conn) Recv() (MsgType, []byte, error) {

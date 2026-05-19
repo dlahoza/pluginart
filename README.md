@@ -95,6 +95,23 @@ docker build -f examples/plugin-repeat-ts/Dockerfile -t pluginart-repeat-ts:loca
 
 Each host example calls the binary `echo` plugins and the Dockerized `repeat` plugins through the same `pluginart.toml` lifecycle.
 
+## Benchmarks
+
+Host-go to Dockerized repeat plugins over TCP, using 100 calls per case on an Apple M5. The benchmark reuses one request payload per case and reports Go host allocations for the call plus zero-copy response decode.
+
+| Response size | Go plugin | Python plugin | TypeScript plugin | Host allocations |
+| --- | ---: | ---: | ---: | ---: |
+| 10 bytes | 102670 ns/op | 137980 ns/op | 174167 ns/op | 200 B/op, 6 allocs/op |
+| 1000 bytes | 122965 ns/op | 140032 ns/op | 192566 ns/op | 1288 B/op, 6 allocs/op |
+| 10000 bytes | 183255 ns/op | 195667 ns/op | 270846 ns/op | 10376 B/op, 6 allocs/op |
+
+Run the same comparison locally:
+
+```bash
+cd examples/host-go
+go test -run TestRepeatDockerMemoryGrowth -bench BenchmarkRepeatDockerComparison -benchmem -benchtime=100x -count=1
+```
+
 ## Docs
 
 - [Getting started](docs/getting-started.md)
