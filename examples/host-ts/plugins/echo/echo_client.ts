@@ -2,12 +2,13 @@
 import * as flatbuffers from 'flatbuffers';
 import { PluginManager } from 'pluginart';
 import { EchoResponse } from './echo/echo-response';
+
 import { BuildEchoCallRequest, DecodeEchoResponse } from './pluginart_helpers';
 
 export class echoClient {
   constructor(private manager: PluginManager, private pluginName: string) {}
 
-  /** Call Echo on the plugin. payload is an EchoRequest table offset. */
+  /** Call Echo on the plugin. payload is a EchoRequest table offset. */
   async Echo(builder: flatbuffers.Builder, payload: flatbuffers.Offset): Promise<EchoResponse> {
     const raw = await this.manager.call(this.pluginName, BuildEchoCallRequest(builder, payload));
     return DecodeEchoResponse(raw).payload;

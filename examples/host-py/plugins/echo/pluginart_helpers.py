@@ -2,9 +2,9 @@
 from dataclasses import dataclass
 
 try:
-    from .fb.echo import CallRequest, CallResponse, EchoRequest, EchoResponse, RequestPayload, ResponsePayload
+    from .echo import CallRequest, CallResponse, EchoRequest, EchoResponse, RequestPayload, ResponsePayload
 except ImportError:
-    from fb.echo import CallRequest, CallResponse, EchoRequest, EchoResponse, RequestPayload, ResponsePayload
+    from echo import CallRequest, CallResponse, EchoRequest, EchoResponse, RequestPayload, ResponsePayload
 
 
 @dataclass(frozen=True)
@@ -13,7 +13,7 @@ class CallContext:
 
 
 def BuildEchoCallRequest(builder, payload: int) -> bytes:
-    """Wrap an EchoRequest table offset in a CallRequest envelope."""
+    """Wrap a EchoRequest table offset in a CallRequest envelope."""
     CallRequest.CallRequestStart(builder)
     CallRequest.CallRequestAddPayloadType(builder, RequestPayload.RequestPayload.EchoRequest)
     CallRequest.CallRequestAddPayload(builder, payload)
@@ -38,7 +38,7 @@ def DecodeEchoRequest(payload: bytes) -> tuple[EchoRequest.EchoRequest, CallCont
 
 
 def BuildEchoCallResponse(call: CallContext, builder, payload: int) -> bytes:
-    """Wrap an EchoResponse table offset in a CallResponse envelope."""
+    """Wrap a EchoResponse table offset in a CallResponse envelope."""
     CallResponse.CallResponseStart(builder)
     CallResponse.CallResponseAddRequestId(builder, call.request_id)
     CallResponse.CallResponseAddPayloadType(builder, ResponsePayload.ResponsePayload.EchoResponse)
@@ -61,3 +61,5 @@ def DecodeEchoResponse(payload: bytes) -> tuple[EchoResponse.EchoResponse, CallC
     out = EchoResponse.EchoResponse()
     out.Init(union_obj.Bytes, union_obj.Pos)
     return out, CallContext(request_id=response.RequestId())
+
+

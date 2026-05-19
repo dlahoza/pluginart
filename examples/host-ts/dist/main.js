@@ -36,8 +36,8 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const path = __importStar(require("path"));
 const flatbuffers = __importStar(require("flatbuffers"));
 const pluginart_1 = require("pluginart");
-const echo_request_1 = require("./echo/echo-request");
-const echo_client_1 = require("./echo_client");
+const echo_request_1 = require("./plugins/echo/echo/echo-request");
+const echo_client_1 = require("./plugins/echo/echo_client");
 function buildEchoPayload(input) {
     const b = new flatbuffers.Builder(256);
     const inputOff = b.createString(input);

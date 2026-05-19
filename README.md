@@ -22,8 +22,8 @@ The schema defines payload tables and method names. Generated clients give host 
 ## Quickstart: Go Host
 
 ```bash
-pluginart gen client --lang go --schema examples/schema/echo.fbs --out examples/host-go/echo
-pluginart gen plugin --lang go --name echo --schema examples/schema/echo.fbs --out examples/plugin-go
+pluginart gen client --lang go --schema examples/schema/echo.fbs --out examples/host-go/plugins
+pluginart gen client --lang go --schema examples/schema/echo.fbs --out examples/plugin-go/plugin
 cd examples/plugin-go && go build -o plugin-go .
 cd ../host-go && go run .
 ```
@@ -33,7 +33,8 @@ Go hosts use `runtime.NewManagerFromConfig("pluginart.toml")` and generated clie
 ## Quickstart: Python Host
 
 ```bash
-pluginart gen client --lang python --schema examples/schema/echo.fbs --out examples/host-py/gen
+pluginart gen client --lang python --schema examples/schema/echo.fbs --out examples/host-py/plugins/echo
+pluginart gen plugin --lang python --name echo --schema examples/schema/echo.fbs --out examples/plugin-py/plugin
 pip install pluginart flatbuffers
 python examples/host-py/main.py
 ```
@@ -42,7 +43,7 @@ Python hosts use:
 
 ```python
 from pluginart import PluginManager
-from gen.echo_client import echoClient
+from plugins.echo.echo_client import echoClient
 
 with PluginManager.from_config("pluginart.toml") as manager:
     client = echoClient(manager, "echo")
@@ -52,7 +53,7 @@ with PluginManager.from_config("pluginart.toml") as manager:
 ## Quickstart: TypeScript Host
 
 ```bash
-pluginart gen client --lang typescript --schema examples/schema/echo.fbs --out examples/host-ts/gen
+pluginart gen client --lang typescript --schema examples/schema/echo.fbs --out examples/host-ts/plugins/echo
 npm install pluginart flatbuffers
 npm run build && npm start
 ```

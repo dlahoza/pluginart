@@ -6,7 +6,7 @@ import (
 	"log"
 	"time"
 
-	"example-host/echo"
+	"example-host/plugins/echo"
 
 	"github.com/dlahoza/pluginart/pkg/runtime"
 	flatbuffers "github.com/google/flatbuffers/go"

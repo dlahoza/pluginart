@@ -78,7 +78,7 @@ jobs:
         with:
           python-version: '3.12'
       - name: Install Python deps
-        run: pip install -e runtimes/python -r examples/plugin-py/requirements.txt
+        run: pip install -e runtimes/python -r examples/plugin-py/plugin/requirements.txt
       - name: Build plugin-go
         run: cd examples/plugin-go && go build -o plugin-go .
       - name: Run host-go
@@ -103,7 +103,7 @@ jobs:
         with:
           node-version: '22'
       - name: Install Python deps
-        run: pip install -e runtimes/python -r examples/plugin-py/requirements.txt
+        run: pip install -e runtimes/python -r examples/plugin-py/plugin/requirements.txt
       - name: Build plugin-go
         run: cd examples/plugin-go && go build -o plugin-go .
       - name: Build local TypeScript runtime package

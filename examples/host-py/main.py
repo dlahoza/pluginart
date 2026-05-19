@@ -10,8 +10,8 @@ ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / "runtimes/python"))
 
 from pluginart import PluginManager
-from gen.echo_client import echoClient
-from gen.fb.echo import EchoRequest
+from plugins.echo.echo_client import echoClient
+from plugins.echo.echo import EchoRequest
 
 
 def build_echo_payload(input_text: str):

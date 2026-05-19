@@ -15,7 +15,7 @@ class echoClient:
         self._plugin_name = plugin_name
 
     def Echo(self, builder, payload: int):
-        """Call Echo on the plugin. payload is an EchoRequest table offset."""
+        """Call Echo on the plugin. payload is a EchoRequest table offset."""
         raw = self._manager.call(self._plugin_name, BuildEchoCallRequest(builder, payload))
         response, _ = DecodeEchoResponse(raw)
         return response

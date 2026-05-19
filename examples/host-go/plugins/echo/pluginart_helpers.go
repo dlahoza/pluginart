@@ -12,7 +12,7 @@ type CallContext struct {
 	RequestID uint64
 }
 
-// BuildEchoCallRequest wraps an EchoRequest table offset in a CallRequest envelope.
+// BuildEchoCallRequest wraps a EchoRequest table offset in a CallRequest envelope.
 func BuildEchoCallRequest(builder *flatbuffers.Builder, payload flatbuffers.UOffsetT) []byte {
 	CallRequestStart(builder)
 	CallRequestAddPayloadType(builder, RequestPayloadEchoRequest)
@@ -37,7 +37,7 @@ func DecodeEchoRequest(payload []byte) (*EchoRequest, CallContext, error) {
 	return out, CallContext{RequestID: req.RequestId()}, nil
 }
 
-// BuildEchoCallResponse wraps an EchoResponse table offset in a CallResponse envelope.
+// BuildEchoCallResponse wraps a EchoResponse table offset in a CallResponse envelope.
 func BuildEchoCallResponse(call CallContext, builder *flatbuffers.Builder, payload flatbuffers.UOffsetT) []byte {
 	CallResponseStart(builder)
 	CallResponseAddRequestId(builder, call.RequestID)

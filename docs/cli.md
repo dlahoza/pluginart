@@ -20,7 +20,7 @@ pluginart gen client --lang python --schema schema/echo.fbs --out gen/python
 pluginart gen client --lang typescript --schema schema/echo.fbs --out gen/typescript
 ```
 
-Go output includes FlatBuffers modules, a generated client, `pluginart_helpers.go` envelope helpers, and `contract.go`. Python output includes FlatBuffers Python modules, `<namespace>_client.py`, `pluginart_helpers.py`, and `contract.py`. TypeScript output includes FlatBuffers TypeScript modules, `<namespace>_client.ts`, `pluginart_helpers.ts`, and `contract.ts`.
+Go output includes FlatBuffers modules, a generated client, `pluginart_helpers.go` envelope helpers, and `contract.go`. Python output includes FlatBuffers Python modules, `<namespace>_client.py`, `pluginart_helpers.py`, and `contract.py`. TypeScript output includes FlatBuffers TypeScript modules, `<namespace>_client.ts`, `pluginart_helpers.ts`, and `contract.ts`. The repository examples place generated host code under `examples/host-*/plugins/echo`.
 
 ## `pluginart gen plugin`
 
@@ -30,7 +30,7 @@ Generates a plugin skeleton.
 pluginart gen plugin --lang python --name echo --schema schema/echo.fbs --out echo-plugin-py
 ```
 
-Python and TypeScript skeletons import runtime package server helpers. They do not emit copied wire-protocol helpers.
+Python and TypeScript skeletons import runtime package server helpers. They do not emit copied wire-protocol helpers. The repository plugin examples place generated plugin code under `examples/plugin-*/plugin`.
 
 ## `pluginart validate`
 

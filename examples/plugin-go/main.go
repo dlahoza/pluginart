@@ -7,13 +7,11 @@ import (
 	"os"
 	"strings"
 
-	"example-plugin/echo"
+	"example-plugin/plugin/echo"
 
 	"github.com/dlahoza/pluginart/pkg/protocol"
 	flatbuffers "github.com/google/flatbuffers/go"
 )
-
-const contractHash = "sha256:094f99745014e0e307ad2b73394a45887059d3ce7fcda59fbd741f77e7904a14"
 
 func main() {
 	var (
@@ -36,7 +34,7 @@ func main() {
 
 	fmt.Println("READY")
 
-	server := protocol.NewServer(ln, &EchoHandler{}, contractHash)
+	server := protocol.NewServer(ln, &EchoHandler{}, echo.ContractHash)
 	if err := server.Serve(); err != nil {
 		fmt.Fprintf(os.Stderr, "serve: %v\n", err)
 		os.Exit(1)

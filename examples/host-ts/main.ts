@@ -1,9 +1,9 @@
 import * as path from 'path';
 import * as flatbuffers from 'flatbuffers';
 import { PluginManager } from 'pluginart';
-import { EchoRequest } from './echo/echo-request';
-import { EchoResponse } from './echo/echo-response';
-import { echoClient } from './echo_client';
+import { EchoRequest } from './plugins/echo/echo/echo-request';
+import { EchoResponse } from './plugins/echo/echo/echo-response';
+import { echoClient } from './plugins/echo/echo_client';
 
 function buildEchoPayload(input: string): { builder: flatbuffers.Builder; payload: flatbuffers.Offset } {
   const b = new flatbuffers.Builder(256);

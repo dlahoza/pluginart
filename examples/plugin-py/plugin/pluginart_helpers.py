@@ -25,7 +25,7 @@ def DecodeEchoRequest(payload: bytes) -> tuple[EchoRequest.EchoRequest, CallCont
 
 
 def BuildEchoCallResponse(call: CallContext, builder, payload: int) -> bytes:
-    """Wrap an EchoResponse table offset in a CallResponse envelope."""
+    """Wrap a EchoResponse table offset in a CallResponse envelope."""
     CallResponse.CallResponseStart(builder)
     CallResponse.CallResponseAddRequestId(builder, call.request_id)
     CallResponse.CallResponseAddPayloadType(builder, ResponsePayload.ResponsePayload.EchoResponse)
@@ -33,3 +33,5 @@ def BuildEchoCallResponse(call: CallContext, builder, payload: int) -> bytes:
     response = CallResponse.CallResponseEnd(builder)
     builder.Finish(response)
     return bytes(builder.Output())
+
+

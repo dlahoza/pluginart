@@ -51,3 +51,4 @@ export function DecodeEchoResponse(payload: Buffer): { payload: EchoResponse; ca
   if (!out) throw new Error('missing EchoResponse payload');
   return { payload: out, call: { requestId: response.requestId() } };
 }
+

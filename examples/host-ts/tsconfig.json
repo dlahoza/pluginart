@@ -6,5 +6,5 @@
     "strict": true,
     "esModuleInterop": true
   },
-  "include": ["*.ts", "echo/**/*.ts"]
+  "include": ["*.ts", "plugins/**/*.ts"]
 }
