@@ -33,3 +33,21 @@ path = "node"
 args = ["../plugin-ts/dist/plugin.js"]
 transport = "tcp"
 contract_hash = "sha256:094f99745014e0e307ad2b73394a45887059d3ce7fcda59fbd741f77e7904a14"
+
+[[plugins]]
+name = "repeat-go"
+type = "docker"
+image = "pluginart-repeat-go:local"
+contract_hash = "sha256:f83b4e6033244f2dbdcba6d61e07a7eed3e0a3cc49eb41ebdb57165231adaf8d"
+
+[[plugins]]
+name = "repeat-py"
+type = "docker"
+image = "pluginart-repeat-py:local"
+contract_hash = "sha256:f83b4e6033244f2dbdcba6d61e07a7eed3e0a3cc49eb41ebdb57165231adaf8d"
+
+[[plugins]]
+name = "repeat-ts"
+type = "docker"
+image = "pluginart-repeat-ts:local"
+contract_hash = "sha256:f83b4e6033244f2dbdcba6d61e07a7eed3e0a3cc49eb41ebdb57165231adaf8d"

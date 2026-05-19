@@ -166,7 +166,9 @@ class Plugin:
 
     def _start_docker(self) -> None:
         addr = _free_tcp_addr()
-        args = ["docker", "run", "-d", "--network", "host", "-e", f"PLUGIN_ADDR={addr}"]
+        host, port = addr.rsplit(":", 1)
+        container_addr = f"0.0.0.0:{port}"
+        args = ["docker", "run", "-d", "-p", f"{host}:{port}:{port}", "-e", f"PLUGIN_ADDR={container_addr}"]
         for k, v in dict(self.cfg.get("env") or {}).items():
             args.extend(["-e", f"{k}={v}"])
         resources = dict(self.cfg.get("resources") or {})
@@ -177,7 +179,12 @@ class Plugin:
         args.append(str(self.cfg.get("image")))
         args.extend(str(a) for a in self.cfg.get("args") or [])
         self.container_id = subprocess.check_output(args, text=True).strip()
-        logs = subprocess.Popen(["docker", "logs", "-f", self.container_id], stdout=subprocess.PIPE, text=True)
+        logs = subprocess.Popen(
+            ["docker", "logs", "-f", self.container_id],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.DEVNULL,
+            text=True,
+        )
         self._wait_ready(logs, self.startup_timeout, self.name)
         self._connect("tcp", addr)
 
@@ -249,8 +256,28 @@ class Plugin:
         if client is not None:
             client.close()
         if self.container_id:
-            subprocess.run(["docker", "stop", self.container_id], timeout=self.shutdown_timeout, check=False)
-            subprocess.run(["docker", "rm", self.container_id], check=False)
+            try:
+                subprocess.run(
+                    ["docker", "stop", "-t", "1", self.container_id],
+                    timeout=self.shutdown_timeout,
+                    check=False,
+                    stdout=subprocess.DEVNULL,
+                    stderr=subprocess.DEVNULL,
+                )
+            except subprocess.TimeoutExpired:
+                subprocess.run(
+                    ["docker", "rm", "-f", self.container_id],
+                    check=False,
+                    stdout=subprocess.DEVNULL,
+                    stderr=subprocess.DEVNULL,
+                )
+            else:
+                subprocess.run(
+                    ["docker", "rm", self.container_id],
+                    check=False,
+                    stdout=subprocess.DEVNULL,
+                    stderr=subprocess.DEVNULL,
+                )
             self.container_id = ""
         if self.proc is not None and self.proc.poll() is None:
             self.proc.terminate()

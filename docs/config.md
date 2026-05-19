@@ -35,7 +35,7 @@ Plugin fields: `name`, `type`, `path`, `args`, `image`, `address`, `transport`, 
 
 `binary` runs `path` with `args`, injects `PLUGIN_SOCKET` by default, or `PLUGIN_ADDR` when `transport = "tcp"`.
 
-`docker` runs `image` with Docker, injects `PLUGIN_ADDR`, applies `resources.memory` and `resources.cpus`, and waits for `READY` in logs.
+`docker` runs `image` with Docker, publishes an allocated TCP port, injects `PLUGIN_ADDR` inside the container, applies `resources.memory` and `resources.cpus`, and waits for `READY` in logs.
 
 `remote` dials `address` over TCP and performs the handshake. Remote plugins are not process-managed.
 

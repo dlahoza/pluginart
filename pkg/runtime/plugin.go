@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"context"
 	"fmt"
+	"net"
 	"os"
 	"os/exec"
 	"strings"
@@ -225,8 +226,16 @@ func (p *plugin) startDocker(ctx context.Context) error {
 	if err != nil {
 		return fmt.Errorf("allocate tcp port for %q: %w", p.cfg.Name, err)
 	}
+	host, port, err := net.SplitHostPort(dialer.Addr())
+	if err != nil {
+		return fmt.Errorf("allocate tcp port for %q: %w", p.cfg.Name, err)
+	}
+	if host == "" {
+		host = "127.0.0.1"
+	}
+	containerAddr := "0.0.0.0:" + port
 
-	args := []string{"run", "-d", "--network", "host", "-e", "PLUGIN_ADDR=" + dialer.Addr()}
+	args := []string{"run", "-d", "-p", host + ":" + port + ":" + port, "-e", "PLUGIN_ADDR=" + containerAddr}
 	for k, v := range p.cfg.Env {
 		args = append(args, "-e", k+"="+v)
 	}
@@ -408,7 +417,7 @@ func (p *plugin) shutdown(ctx context.Context) error {
 	if containerID != "" {
 		shutCtx, shutCancel := context.WithTimeout(ctx, p.shutdownTimeout)
 		defer shutCancel()
-		_ = exec.CommandContext(shutCtx, "docker", "stop", containerID).Run()
+		_ = exec.CommandContext(shutCtx, "docker", "stop", "-t", "1", containerID).Run()
 		_ = exec.Command("docker", "rm", containerID).Run()
 		return nil
 	}

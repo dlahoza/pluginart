@@ -1,0 +1,29 @@
+// Repeat plugin schema: repeats a string input count times.
+namespace repeat;
+
+table RepeatRequest  { input: string; count: uint32; }
+table RepeatResponse { output: string; }
+
+union RequestPayload  { RepeatRequest }
+union ResponsePayload { RepeatResponse }
+
+table CallRequest {
+  request_id:       uint64;
+  deadline_unix_ms: int64;
+  trace_id:         string;
+  span_id:          string;
+  payload:          RequestPayload;
+}
+
+table CallResponse {
+  request_id: uint64;
+  payload:    ResponsePayload;
+}
+
+table PluginError {
+  code:    uint16;
+  message: string (required);
+  retry:   bool;
+}
+
+root_type CallRequest;

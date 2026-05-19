@@ -109,7 +109,11 @@ class ManagedPlugin {
 
   private async startDocker(): Promise<void> {
     const addr = await freeTcpAddr();
-    const args = ['run', '-d', '--network', 'host', '-e', `PLUGIN_ADDR=${addr}`];
+    const colon = addr.lastIndexOf(':');
+    const host = addr.slice(0, colon);
+    const port = addr.slice(colon + 1);
+    const containerAddr = `0.0.0.0:${port}`;
+    const args = ['run', '-d', '-p', `${host}:${port}:${port}`, '-e', `PLUGIN_ADDR=${containerAddr}`];
     for (const [k, v] of Object.entries(this.cfg.env ?? {})) args.push('-e', `${k}=${v}`);
     if (this.cfg.resources?.memory) args.push('--memory', String(this.cfg.resources.memory));
     if (this.cfg.resources?.cpus) args.push('--cpus', String(this.cfg.resources.cpus));
@@ -117,7 +121,7 @@ class ManagedPlugin {
     this.containerId = await new Promise((resolve, reject) => {
       childProcess.execFile('docker', args, (err, stdout) => err ? reject(err) : resolve(stdout.trim()));
     });
-    const logs = childProcess.spawn('docker', ['logs', '-f', this.containerId], { stdio: ['ignore', 'pipe', 'inherit'] });
+    const logs = childProcess.spawn('docker', ['logs', '-f', this.containerId], { stdio: ['ignore', 'pipe', 'ignore'] });
     await this.waitReady(logs, duration(this.cfg.startup_timeout, duration(this.defaults.startup_timeout, 5000)));
     await this.connect('tcp', addr);
   }
@@ -179,7 +183,7 @@ class ManagedPlugin {
     this.client?.close();
     this.client = null;
     if (this.containerId) {
-      childProcess.spawnSync('docker', ['stop', this.containerId]);
+      childProcess.spawnSync('docker', ['stop', '-t', '1', this.containerId]);
       childProcess.spawnSync('docker', ['rm', this.containerId]);
       this.containerId = '';
     }

@@ -92,14 +92,24 @@ jobs:
           rm -rf examples/plugin-py/plugin
           rm -rf examples/plugin-ts/plugin
           rm -rf examples/plugin-ts/dist
+          rm -rf examples/plugin-repeat-go/plugin
+          rm -rf examples/plugin-repeat-py/plugin
+          rm -rf examples/plugin-repeat-ts/plugin
+          rm -rf examples/plugin-repeat-ts/dist
       - name: Regenerate example code
         run: |
           go run ./cmd/pluginart gen bindings --target host --lang go --schema examples/schema/echo.fbs --out examples/host-go/plugins
+          go run ./cmd/pluginart gen bindings --target host --lang go --schema examples/schema/repeat.fbs --out examples/host-go/plugins
           go run ./cmd/pluginart gen bindings --target host --lang python --schema examples/schema/echo.fbs --out examples/host-py/plugins/echo
+          go run ./cmd/pluginart gen bindings --target host --lang python --schema examples/schema/repeat.fbs --out examples/host-py/plugins/repeat
           go run ./cmd/pluginart gen bindings --target host --lang typescript --schema examples/schema/echo.fbs --out examples/host-ts/plugins/echo
+          go run ./cmd/pluginart gen bindings --target host --lang typescript --schema examples/schema/repeat.fbs --out examples/host-ts/plugins/repeat
           go run ./cmd/pluginart gen bindings --target plugin --lang go --schema examples/schema/echo.fbs --out examples/plugin-go/plugin
           go run ./cmd/pluginart gen plugin --lang python --name echo --schema examples/schema/echo.fbs --out examples/plugin-py
           go run ./cmd/pluginart gen plugin --lang typescript --name echo --schema examples/schema/echo.fbs --out examples/plugin-ts
+          go run ./cmd/pluginart gen plugin --lang go --name repeat --schema examples/schema/repeat.fbs --out examples/plugin-repeat-go
+          go run ./cmd/pluginart gen plugin --lang python --name repeat --schema examples/schema/repeat.fbs --out examples/plugin-repeat-py
+          go run ./cmd/pluginart gen plugin --lang typescript --name repeat --schema examples/schema/repeat.fbs --out examples/plugin-repeat-ts
       - name: Install Python deps
         run: pip install -e runtimes/python -r examples/plugin-py/requirements.txt
       - name: Build plugin-go
@@ -110,6 +120,11 @@ jobs:
         run: cd examples/plugin-ts && npm install && npm run build
       - name: Build host-ts
         run: cd examples/host-ts && npm install && npm run build
+      - name: Build repeat Docker plugins
+        run: |
+          docker build -f examples/plugin-repeat-go/Dockerfile -t pluginart-repeat-go:local .
+          docker build -f examples/plugin-repeat-py/Dockerfile -t pluginart-repeat-py:local .
+          docker build -f examples/plugin-repeat-ts/Dockerfile -t pluginart-repeat-ts:local .
       - name: Run host-go
         run: |
           output=$(cd examples/host-go && go run . 2>/dev/null)
@@ -117,12 +132,19 @@ jobs:
           echo "$output" | grep -qF 'echo (go):     HELLO FROM HOST'
           echo "$output" | grep -qF 'echo (python): HELLO FROM HOST'
           echo "$output" | grep -qF 'echo (ts):     HELLO FROM HOST'
+          echo "$output" | grep -qF 'repeat (go):     hahaha'
+          echo "$output" | grep -qF 'repeat (python): hahaha'
+          echo "$output" | grep -qF 'repeat (ts):     hahaha'
       - name: Run host-py
         run: |
           output=$(python examples/host-py/main.py 2>/dev/null)
           echo "$output"
           echo "$output" | grep -qF 'echo (go):     HELLO FROM PYTHON HOST'
           echo "$output" | grep -qF 'echo (python): HELLO FROM PYTHON HOST'
+          echo "$output" | grep -qF 'echo (ts):     HELLO FROM PYTHON HOST'
+          echo "$output" | grep -qF 'repeat (go):     hahaha'
+          echo "$output" | grep -qF 'repeat (python): hahaha'
+          echo "$output" | grep -qF 'repeat (ts):     hahaha'
       - name: Run host-ts
         run: |
           output=$(cd examples/host-ts && node dist/main.js 2>/dev/null)
@@ -130,6 +152,9 @@ jobs:
           echo "$output" | grep -qF 'echo (go):     HELLO FROM TS HOST'
           echo "$output" | grep -qF 'echo (python): HELLO FROM TS HOST'
           echo "$output" | grep -qF 'echo (ts):     HELLO FROM TS HOST'
+          echo "$output" | grep -qF 'repeat (go):     hahaha'
+          echo "$output" | grep -qF 'repeat (python): hahaha'
+          echo "$output" | grep -qF 'repeat (ts):     hahaha'
 
   integration-host-go:
     name: "Integration: host-go → plugin-go + plugin-py + plugin-ts"
@@ -153,6 +178,11 @@ jobs:
         run: cd runtimes/typescript && npm install && npm run build
       - name: Build plugin-ts
         run: cd examples/plugin-ts && npm install && npm run build
+      - name: Build repeat Docker plugins
+        run: |
+          docker build -f examples/plugin-repeat-go/Dockerfile -t pluginart-repeat-go:local .
+          docker build -f examples/plugin-repeat-py/Dockerfile -t pluginart-repeat-py:local .
+          docker build -f examples/plugin-repeat-ts/Dockerfile -t pluginart-repeat-ts:local .
       - name: Run host-go
         run: |
           output=$(cd examples/host-go && go run . 2>/dev/null)
@@ -160,6 +190,9 @@ jobs:
           echo "$output" | grep -qF 'echo (go):     HELLO FROM HOST'
           echo "$output" | grep -qF 'echo (python): HELLO FROM HOST'
           echo "$output" | grep -qF 'echo (ts):     HELLO FROM HOST'
+          echo "$output" | grep -qF 'repeat (go):     hahaha'
+          echo "$output" | grep -qF 'repeat (python): hahaha'
+          echo "$output" | grep -qF 'repeat (ts):     hahaha'
 
   integration-host-ts:
     name: "Integration: host-ts → plugin-go + plugin-py + plugin-ts"
@@ -185,6 +218,11 @@ jobs:
         run: cd examples/plugin-ts && npm install && npm run build
       - name: Build host-ts
         run: cd examples/host-ts && npm install && npm run build
+      - name: Build repeat Docker plugins
+        run: |
+          docker build -f examples/plugin-repeat-go/Dockerfile -t pluginart-repeat-go:local .
+          docker build -f examples/plugin-repeat-py/Dockerfile -t pluginart-repeat-py:local .
+          docker build -f examples/plugin-repeat-ts/Dockerfile -t pluginart-repeat-ts:local .
       - name: Run host-ts
         run: |
           output=$(cd examples/host-ts && node dist/main.js 2>/dev/null)
@@ -192,6 +230,9 @@ jobs:
           echo "$output" | grep -qF 'echo (go):     HELLO FROM TS HOST'
           echo "$output" | grep -qF 'echo (python): HELLO FROM TS HOST'
           echo "$output" | grep -qF 'echo (ts):     HELLO FROM TS HOST'
+          echo "$output" | grep -qF 'repeat (go):     hahaha'
+          echo "$output" | grep -qF 'repeat (python): hahaha'
+          echo "$output" | grep -qF 'repeat (ts):     hahaha'
 
   integration-host-py:
     name: "Integration: host-py -> plugin-go + plugin-py + plugin-ts"
@@ -211,9 +252,17 @@ jobs:
       - run: cd examples/plugin-go && go build -o plugin-go .
       - run: cd runtimes/typescript && npm install && npm run build
       - run: cd examples/plugin-ts && npm install && npm run build
+      - name: Build repeat Docker plugins
+        run: |
+          docker build -f examples/plugin-repeat-go/Dockerfile -t pluginart-repeat-go:local .
+          docker build -f examples/plugin-repeat-py/Dockerfile -t pluginart-repeat-py:local .
+          docker build -f examples/plugin-repeat-ts/Dockerfile -t pluginart-repeat-ts:local .
       - run: |
           output=$(python examples/host-py/main.py 2>/dev/null)
           echo "$output"
           echo "$output" | grep -qF 'echo (go):     HELLO FROM PYTHON HOST'
           echo "$output" | grep -qF 'echo (python): HELLO FROM PYTHON HOST'
           echo "$output" | grep -qF 'echo (ts):     HELLO FROM PYTHON HOST'
+          echo "$output" | grep -qF 'repeat (go):     hahaha'
+          echo "$output" | grep -qF 'repeat (python): hahaha'
+          echo "$output" | grep -qF 'repeat (ts):     hahaha'

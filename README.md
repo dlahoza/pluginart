@@ -81,6 +81,16 @@ await manager.shutdown();
 
 Config-driven lifecycle is available in Go, Python, and TypeScript runtimes.
 
+The repository examples also include `repeat` plugins in Go, Python, and TypeScript that run through Docker mode. Build them from the repository root before running any host example:
+
+```bash
+docker build -f examples/plugin-repeat-go/Dockerfile -t pluginart-repeat-go:local .
+docker build -f examples/plugin-repeat-py/Dockerfile -t pluginart-repeat-py:local .
+docker build -f examples/plugin-repeat-ts/Dockerfile -t pluginart-repeat-ts:local .
+```
+
+Each host example calls the binary `echo` plugins and the Dockerized `repeat` plugins through the same `pluginart.toml` lifecycle.
+
 ## Docs
 
 - [Getting started](docs/getting-started.md)

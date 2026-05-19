@@ -38,6 +38,8 @@ const flatbuffers = __importStar(require("flatbuffers"));
 const pluginart_1 = require("pluginart");
 const echo_request_1 = require("./plugins/echo/echo/echo-request");
 const echo_client_1 = require("./plugins/echo/echo_client");
+const repeat_request_1 = require("./plugins/repeat/repeat/repeat-request");
+const repeat_client_1 = require("./plugins/repeat/repeat_client");
 function buildEchoPayload(input) {
     const b = new flatbuffers.Builder(256);
     const inputOff = b.createString(input);
@@ -47,6 +49,18 @@ function buildEchoPayload(input) {
     return { builder: b, payload: echoReqOff };
 }
 function decodeEchoOutput(response) {
+    return response.output() ?? '';
+}
+function buildRepeatPayload(input, count) {
+    const b = new flatbuffers.Builder(256);
+    const inputOff = b.createString(input);
+    repeat_request_1.RepeatRequest.startRepeatRequest(b);
+    repeat_request_1.RepeatRequest.addInput(b, inputOff);
+    repeat_request_1.RepeatRequest.addCount(b, count);
+    const repeatReqOff = repeat_request_1.RepeatRequest.endRepeatRequest(b);
+    return { builder: b, payload: repeatReqOff };
+}
+function decodeRepeatOutput(response) {
     return response.output() ?? '';
 }
 async function main() {
@@ -63,6 +77,15 @@ async function main() {
         const tsClient = new echo_client_1.echoClient(manager, 'echo-ts');
         request = buildEchoPayload('hello from ts host');
         console.log(`echo (ts):     ${decodeEchoOutput(await tsClient.Echo(request.builder, request.payload))}`);
+        const repeatGoClient = new repeat_client_1.repeatClient(manager, 'repeat-go');
+        const repeatPyClient = new repeat_client_1.repeatClient(manager, 'repeat-py');
+        const repeatTsClient = new repeat_client_1.repeatClient(manager, 'repeat-ts');
+        let repeatRequest = buildRepeatPayload('ha', 3);
+        console.log(`repeat (go):     ${decodeRepeatOutput(await repeatGoClient.Repeat(repeatRequest.builder, repeatRequest.payload))}`);
+        repeatRequest = buildRepeatPayload('ha', 3);
+        console.log(`repeat (python): ${decodeRepeatOutput(await repeatPyClient.Repeat(repeatRequest.builder, repeatRequest.payload))}`);
+        repeatRequest = buildRepeatPayload('ha', 3);
+        console.log(`repeat (ts):     ${decodeRepeatOutput(await repeatTsClient.Repeat(repeatRequest.builder, repeatRequest.payload))}`);
     }
     finally {
         await manager.shutdown();

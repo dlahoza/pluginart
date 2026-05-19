@@ -8,6 +8,7 @@ This workflow starts from one `.fbs` schema and ends with a host that can call p
 - Go 1.23 or later for the CLI and Go runtime
 - Python 3.11 or later for the Python runtime
 - Node 22 or later for the TypeScript runtime
+- Docker for the Docker-mode `repeat` examples
 
 ```bash
 go install github.com/dlahoza/pluginart/cmd/pluginart@latest
@@ -71,10 +72,14 @@ The runtime reads `pluginart.toml`, starts local plugins, performs the handshake
 
 ```bash
 cd examples/plugin-go && go build -o plugin-go .
-cd ../host-go && go run .
-python ../host-py/main.py
 cd ../plugin-ts && npm install && npm run build
+cd ../..
+docker build -f examples/plugin-repeat-go/Dockerfile -t pluginart-repeat-go:local .
+docker build -f examples/plugin-repeat-py/Dockerfile -t pluginart-repeat-py:local .
+docker build -f examples/plugin-repeat-ts/Dockerfile -t pluginart-repeat-ts:local .
+cd examples/host-go && go run .
+python ../host-py/main.py
 cd ../host-ts && npm install && npm run build && npm start
 ```
 
-The examples keep FlatBuffers payload construction visible while generated helpers hide the pluginart RPC envelope.
+The examples keep FlatBuffers payload construction visible while generated helpers hide the pluginart RPC envelope. The `echo` plugins run as binaries, while the `repeat` plugins run as Docker containers to exercise Docker mode from every host runtime.

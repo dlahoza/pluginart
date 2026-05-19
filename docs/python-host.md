@@ -22,4 +22,12 @@ with PluginManager.from_config("pluginart.toml") as manager:
 
 `builder` and `echo_request_offset` are the FlatBuffers builder and table offset for the method payload, for example `EchoRequest`. Generated helpers wrap that payload in `CallRequest` and unwrap the returned `CallResponse`.
 
-The repository example in `examples/host-py` keeps generated host code under `plugins/echo` and calls both `examples/plugin-go/plugin-go` and `examples/plugin-py/plugin.py`.
+The repository example in `examples/host-py` keeps generated host code under `plugins/echo` and `plugins/repeat`. It calls the Go, Python, and TypeScript `echo` plugins as binaries, and calls the Go, Python, and TypeScript `repeat` plugins as Docker containers.
+
+Build the Docker-mode repeat plugins from the repository root before running the full example:
+
+```bash
+docker build -f examples/plugin-repeat-go/Dockerfile -t pluginart-repeat-go:local .
+docker build -f examples/plugin-repeat-py/Dockerfile -t pluginart-repeat-py:local .
+docker build -f examples/plugin-repeat-ts/Dockerfile -t pluginart-repeat-ts:local .
+```
