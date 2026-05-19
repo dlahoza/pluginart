@@ -4,6 +4,7 @@ Generate a client:
 
 ```bash
 pluginart gen bindings --target host --lang typescript --schema examples/schema/echo.fbs --out examples/host-ts/plugins/echo
+pluginart gen plugin --lang typescript --name echo --schema examples/schema/echo.fbs --out examples/plugin-ts
 npm install pluginart flatbuffers
 ```
 
@@ -27,4 +28,4 @@ try {
 
 `builder` and `echoRequestOffset` are the FlatBuffers builder and table offset for the method payload, for example `EchoRequest`. Generated helpers wrap that payload in `CallRequest` and unwrap the returned `CallResponse`.
 
-The repository example in `examples/host-ts` keeps generated host code under `plugins/echo` and keeps FlatBuffers payload construction in application code.
+The repository example in `examples/host-ts` keeps generated host code under `plugins/echo`, calls Go, Python, and TypeScript plugins, and keeps FlatBuffers payload construction in application code.

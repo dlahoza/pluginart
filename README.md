@@ -54,8 +54,9 @@ with PluginManager.from_config("pluginart.toml") as manager:
 
 ```bash
 pluginart gen bindings --target host --lang typescript --schema examples/schema/echo.fbs --out examples/host-ts/plugins/echo
-npm install pluginart flatbuffers
-npm run build && npm start
+pluginart gen plugin --lang typescript --name echo --schema examples/schema/echo.fbs --out examples/plugin-ts
+cd examples/plugin-ts && npm install && npm run build
+cd ../host-ts && npm install && npm run build && npm start
 ```
 
 TypeScript hosts use:

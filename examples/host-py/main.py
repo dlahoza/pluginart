@@ -29,10 +29,13 @@ def main() -> None:
     with PluginManager.from_config("pluginart.toml") as manager:
         go_client = echoClient(manager, "echo")
         py_client = echoClient(manager, "echo-py")
+        ts_client = echoClient(manager, "echo-ts")
         builder, payload = build_echo_payload("hello from python host")
         print(f"echo (go):     {(go_client.Echo(builder, payload).Output() or b'').decode('utf-8')}")
         builder, payload = build_echo_payload("hello from python host")
         print(f"echo (python): {(py_client.Echo(builder, payload).Output() or b'').decode('utf-8')}")
+        builder, payload = build_echo_payload("hello from python host")
+        print(f"echo (ts):     {(ts_client.Echo(builder, payload).Output() or b'').decode('utf-8')}")
 
 
 if __name__ == "__main__":

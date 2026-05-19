@@ -73,6 +73,7 @@ The runtime reads `pluginart.toml`, starts local plugins, performs the handshake
 cd examples/plugin-go && go build -o plugin-go .
 cd ../host-go && go run .
 python ../host-py/main.py
+cd ../plugin-ts && npm install && npm run build
 cd ../host-ts && npm install && npm run build && npm start
 ```
 

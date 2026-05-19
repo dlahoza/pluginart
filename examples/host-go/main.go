@@ -42,6 +42,14 @@ func main() {
 		log.Fatalf("call echo-py: %v", err)
 	}
 	fmt.Printf("echo (python): %s\n", resp.Output())
+
+	tsClient := echo.NewClient(manager, "echo-ts")
+	payloadBuilder, echoReq = buildEchoPayload("hello from host")
+	resp, err = tsClient.Echo(context.Background(), payloadBuilder, echoReq)
+	if err != nil {
+		log.Fatalf("call echo-ts: %v", err)
+	}
+	fmt.Printf("echo (ts):     %s\n", resp.Output())
 }
 
 func buildEchoPayload(input string) (*flatbuffers.Builder, flatbuffers.UOffsetT) {

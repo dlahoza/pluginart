@@ -31,6 +31,9 @@ async function main(): Promise<void> {
     console.log(`echo (go):     ${decodeEchoOutput(await goClient.Echo(request.builder, request.payload))}`);
     request = buildEchoPayload('hello from ts host');
     console.log(`echo (python): ${decodeEchoOutput(await pyClient.Echo(request.builder, request.payload))}`);
+    const tsClient = new echoClient(manager, 'echo-ts');
+    request = buildEchoPayload('hello from ts host');
+    console.log(`echo (ts):     ${decodeEchoOutput(await tsClient.Echo(request.builder, request.payload))}`);
   } finally {
     await manager.shutdown();
   }

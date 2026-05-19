@@ -90,6 +90,8 @@ jobs:
           rm -rf examples/host-ts/dist
           rm -rf examples/plugin-go/plugin
           rm -rf examples/plugin-py/plugin
+          rm -rf examples/plugin-ts/plugin
+          rm -rf examples/plugin-ts/dist
       - name: Regenerate example code
         run: |
           go run ./cmd/pluginart gen bindings --target host --lang go --schema examples/schema/echo.fbs --out examples/host-go/plugins
@@ -97,12 +99,15 @@ jobs:
           go run ./cmd/pluginart gen bindings --target host --lang typescript --schema examples/schema/echo.fbs --out examples/host-ts/plugins/echo
           go run ./cmd/pluginart gen bindings --target plugin --lang go --schema examples/schema/echo.fbs --out examples/plugin-go/plugin
           go run ./cmd/pluginart gen plugin --lang python --name echo --schema examples/schema/echo.fbs --out examples/plugin-py
+          go run ./cmd/pluginart gen plugin --lang typescript --name echo --schema examples/schema/echo.fbs --out examples/plugin-ts
       - name: Install Python deps
         run: pip install -e runtimes/python -r examples/plugin-py/requirements.txt
       - name: Build plugin-go
         run: cd examples/plugin-go && go build -o plugin-go .
       - name: Build local TypeScript runtime package
         run: cd runtimes/typescript && npm install && npm run build
+      - name: Build plugin-ts
+        run: cd examples/plugin-ts && npm install && npm run build
       - name: Build host-ts
         run: cd examples/host-ts && npm install && npm run build
       - name: Run host-go
@@ -111,6 +116,7 @@ jobs:
           echo "$output"
           echo "$output" | grep -qF 'echo (go):     HELLO FROM HOST'
           echo "$output" | grep -qF 'echo (python): HELLO FROM HOST'
+          echo "$output" | grep -qF 'echo (ts):     HELLO FROM HOST'
       - name: Run host-py
         run: |
           output=$(python examples/host-py/main.py 2>/dev/null)
@@ -123,9 +129,10 @@ jobs:
           echo "$output"
           echo "$output" | grep -qF 'echo (go):     HELLO FROM TS HOST'
           echo "$output" | grep -qF 'echo (python): HELLO FROM TS HOST'
+          echo "$output" | grep -qF 'echo (ts):     HELLO FROM TS HOST'
 
   integration-host-go:
-    name: "Integration: host-go → plugin-go + plugin-py"
+    name: "Integration: host-go → plugin-go + plugin-py + plugin-ts"
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -135,19 +142,27 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
       - name: Install Python deps
         run: pip install -e runtimes/python -r examples/plugin-py/requirements.txt
       - name: Build plugin-go
         run: cd examples/plugin-go && go build -o plugin-go .
+      - name: Build local TypeScript runtime package
+        run: cd runtimes/typescript && npm install && npm run build
+      - name: Build plugin-ts
+        run: cd examples/plugin-ts && npm install && npm run build
       - name: Run host-go
         run: |
           output=$(cd examples/host-go && go run . 2>/dev/null)
           echo "$output"
           echo "$output" | grep -qF 'echo (go):     HELLO FROM HOST'
           echo "$output" | grep -qF 'echo (python): HELLO FROM HOST'
+          echo "$output" | grep -qF 'echo (ts):     HELLO FROM HOST'
 
   integration-host-ts:
-    name: "Integration: host-ts → plugin-go + plugin-py"
+    name: "Integration: host-ts → plugin-go + plugin-py + plugin-ts"
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -166,6 +181,8 @@ jobs:
         run: cd examples/plugin-go && go build -o plugin-go .
       - name: Build local TypeScript runtime package
         run: cd runtimes/typescript && npm install && npm run build
+      - name: Build plugin-ts
+        run: cd examples/plugin-ts && npm install && npm run build
       - name: Build host-ts
         run: cd examples/host-ts && npm install && npm run build
       - name: Run host-ts
@@ -174,9 +191,10 @@ jobs:
           echo "$output"
           echo "$output" | grep -qF 'echo (go):     HELLO FROM TS HOST'
           echo "$output" | grep -qF 'echo (python): HELLO FROM TS HOST'
+          echo "$output" | grep -qF 'echo (ts):     HELLO FROM TS HOST'
 
   integration-host-py:
-    name: "Integration: host-py -> plugin-go + plugin-py"
+    name: "Integration: host-py -> plugin-go + plugin-py + plugin-ts"
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -186,10 +204,16 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
       - run: pip install -e runtimes/python -r examples/plugin-py/requirements.txt
       - run: cd examples/plugin-go && go build -o plugin-go .
+      - run: cd runtimes/typescript && npm install && npm run build
+      - run: cd examples/plugin-ts && npm install && npm run build
       - run: |
           output=$(python examples/host-py/main.py 2>/dev/null)
           echo "$output"
           echo "$output" | grep -qF 'echo (go):     HELLO FROM PYTHON HOST'
           echo "$output" | grep -qF 'echo (python): HELLO FROM PYTHON HOST'
+          echo "$output" | grep -qF 'echo (ts):     HELLO FROM PYTHON HOST'
