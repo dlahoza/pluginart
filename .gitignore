@@ -14,4 +14,7 @@
 .vscode/
 *.swp
 
+# Agents
+.claude/
+
 PRD.md

@@ -16,30 +16,31 @@ import (
 )
 
 const (
-	defaultStartupTimeout   = 5 * time.Second
-	defaultShutdownTimeout  = 10 * time.Second
-	defaultHealthInterval   = 2 * time.Second
-	defaultMaxRestarts      = 5
+	defaultStartupTimeout    = 5 * time.Second
+	defaultShutdownTimeout   = 10 * time.Second
+	defaultHealthInterval    = 2 * time.Second
+	defaultMaxRestarts       = 5
 	defaultRestartBackoffMax = 30 * time.Second
-	defaultMaxMessageBytes  = 4 * 1024 * 1024
-	initialRestartBackoff   = time.Second
-	healthPingTimeout       = 2 * time.Second
+	defaultMaxMessageBytes   = 4 * 1024 * 1024
+	initialRestartBackoff    = time.Second
+	healthPingTimeout        = 2 * time.Second
 )
 
 type plugin struct {
 	cfg      PluginConfig
 	defaults DefaultsConfig
 
-	startupTimeout  time.Duration
-	shutdownTimeout time.Duration
-	healthInterval  time.Duration
-	maxRestarts     int
+	startupTimeout    time.Duration
+	shutdownTimeout   time.Duration
+	healthInterval    time.Duration
+	maxRestarts       int
 	restartBackoffMax time.Duration
-	restartBackoff  time.Duration
-	restartCount    int
+	restartBackoff    time.Duration
+	restartCount      int
 
 	client       *protocol.Client
 	cmd          *exec.Cmd
+	cmdDone      <-chan error
 	cancelHealth context.CancelFunc
 	containerID  string
 	mu           sync.Mutex
@@ -184,6 +185,7 @@ func (p *plugin) startBinary(ctx context.Context) error {
 
 	p.mu.Lock()
 	p.cmd = cmd
+	p.cmdDone = procDone
 	p.mu.Unlock()
 
 	hctx, hcancel := context.WithCancel(context.Background())
@@ -386,9 +388,11 @@ func (p *plugin) shutdown(ctx context.Context) error {
 	cancel := p.cancelHealth
 	client := p.client
 	cmd := p.cmd
+	cmdDone := p.cmdDone
 	containerID := p.containerID
 	p.client = nil
 	p.cmd = nil
+	p.cmdDone = nil
 	p.cancelHealth = nil
 	p.containerID = ""
 	p.mu.Unlock()
@@ -418,8 +422,12 @@ func (p *plugin) shutdown(ctx context.Context) error {
 		return nil
 	}
 
-	done := make(chan error, 1)
-	go func() { done <- cmd.Wait() }()
+	done := cmdDone
+	if done == nil {
+		fallbackDone := make(chan error, 1)
+		go func() { fallbackDone <- cmd.Wait() }()
+		done = fallbackDone
+	}
 
 	shutCtx, shutCancel := context.WithTimeout(ctx, p.shutdownTimeout)
 	defer shutCancel()
