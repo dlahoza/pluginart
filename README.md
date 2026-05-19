@@ -4,7 +4,7 @@
 
 # pluginart
 
-`pluginart` is a CLI plus Go, Python, and TypeScript runtimes for building language-agnostic plugin systems. Hosts manage plugins from `pluginart.toml`; plugins run as binaries, Docker containers, or remote TCP services; all calls use a FlatBuffers-based wire protocol with contract-hash verification at handshake time.
+`pluginart` is a CLI plus Go, Python, and TypeScript runtimes for building language-agnostic plugin systems. Hosts manage plugins from `pluginart.toml`. Plugins run as binaries, Docker containers, or remote TCP services. All calls use a FlatBuffers-based wire protocol with contract-hash verification at handshake time.
 
 ## Install
 
