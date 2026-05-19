@@ -26,40 +26,29 @@ func main() {
 	}
 	defer manager.Shutdown(context.Background())
 
-	payload := buildEchoRequest("hello from host")
+	client := echo.NewClient(manager, "echo")
+	payloadBuilder, echoReq := buildEchoPayload("hello from host")
 
-	resp, err := manager.Call(context.Background(), "echo", payload)
+	resp, err := client.Echo(context.Background(), payloadBuilder, echoReq)
 	if err != nil {
 		log.Fatalf("call echo: %v", err)
 	}
-	fmt.Printf("echo (go):     %s\n", parseEchoResponse(resp))
+	fmt.Printf("echo (go):     %s\n", resp.Output())
 
-	resp, err = manager.Call(context.Background(), "echo-py", payload)
+	pyClient := echo.NewClient(manager, "echo-py")
+	payloadBuilder, echoReq = buildEchoPayload("hello from host")
+	resp, err = pyClient.Echo(context.Background(), payloadBuilder, echoReq)
 	if err != nil {
 		log.Fatalf("call echo-py: %v", err)
 	}
-	fmt.Printf("echo (python): %s\n", parseEchoResponse(resp))
+	fmt.Printf("echo (python): %s\n", resp.Output())
 }
 
-func buildEchoRequest(input string) []byte {
+func buildEchoPayload(input string) (*flatbuffers.Builder, flatbuffers.UOffsetT) {
 	b := flatbuffers.NewBuilder(128)
 	inOff := b.CreateString(input)
 	echo.EchoRequestStart(b)
 	echo.EchoRequestAddInput(b, inOff)
 	echoReqOff := echo.EchoRequestEnd(b)
-	echo.CallRequestStart(b)
-	echo.CallRequestAddPayloadType(b, echo.RequestPayloadEchoRequest)
-	echo.CallRequestAddPayload(b, echoReqOff)
-	reqOff := echo.CallRequestEnd(b)
-	b.Finish(reqOff)
-	return b.FinishedBytes()
-}
-
-func parseEchoResponse(buf []byte) string {
-	resp := echo.GetRootAsCallResponse(buf, 0)
-	var tab flatbuffers.Table
-	resp.Payload(&tab)
-	var echoResp echo.EchoResponse
-	echoResp.Init(tab.Bytes, tab.Pos)
-	return string(echoResp.Output())
+	return b, echoReqOff
 }

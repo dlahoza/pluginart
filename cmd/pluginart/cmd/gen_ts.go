@@ -25,8 +25,7 @@ func runGenClientTypeScript(schemaPath string, parsed *schema.Schema, contractHa
 		ContractHash: contractHash,
 	}
 
-	wireData := struct{ ContractHash string }{ContractHash: contractHash}
-	if err := renderToFile(tsWireTmpl, wireData, filepath.Join(outDir, "pluginart_wire.ts")); err != nil {
+	if err := renderToFile(tsContractTmpl, data, filepath.Join(outDir, "contract.ts")); err != nil {
 		return err
 	}
 
@@ -64,7 +63,7 @@ func runGenPluginTypeScript(schemaPath string, parsed *schema.Schema, contractHa
 		tmpl string
 		name string
 	}{
-		{tsWireTmpl, "pluginart_wire.ts"},
+		{tsContractTmpl, "contract.ts"},
 		{tsPluginTmpl, "plugin.ts"},
 		{tsHandlerTmpl, "handler.ts"},
 		{tsPackageJSONTmpl, "package.json"},

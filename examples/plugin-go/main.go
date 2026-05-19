@@ -46,11 +46,10 @@ func main() {
 type EchoHandler struct{}
 
 func (h *EchoHandler) Handle(_ context.Context, payload []byte) ([]byte, error) {
-	req := echo.GetRootAsCallRequest(payload, 0)
-	var tab flatbuffers.Table
-	req.Payload(&tab)
-	var echoReq echo.EchoRequest
-	echoReq.Init(tab.Bytes, tab.Pos)
+	echoReq, call, err := echo.DecodeEchoRequest(payload)
+	if err != nil {
+		return nil, err
+	}
 	output := strings.ToUpper(string(echoReq.Input()))
 
 	b := flatbuffers.NewBuilder(128)
@@ -58,11 +57,5 @@ func (h *EchoHandler) Handle(_ context.Context, payload []byte) ([]byte, error) 
 	echo.EchoResponseStart(b)
 	echo.EchoResponseAddOutput(b, outOff)
 	echoRespOff := echo.EchoResponseEnd(b)
-	echo.CallResponseStart(b)
-	echo.CallResponseAddRequestId(b, req.RequestId())
-	echo.CallResponseAddPayloadType(b, echo.ResponsePayloadEchoResponse)
-	echo.CallResponseAddPayload(b, echoRespOff)
-	respOff := echo.CallResponseEnd(b)
-	b.Finish(respOff)
-	return b.FinishedBytes(), nil
+	return echo.BuildEchoCallResponse(call, b, echoRespOff), nil
 }

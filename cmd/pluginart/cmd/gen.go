@@ -96,6 +96,9 @@ func runGenClientGo(schemaPath string, parsed *schema.Schema, contractHash strin
 	if err := renderToFile(clientTmpl, data, filepath.Join(outDir, parsed.Namespace+"_client.go")); err != nil {
 		return err
 	}
+	if err := renderToFile(goEnvelopeHelpersTmpl, data, filepath.Join(outDir, "pluginart_helpers.go")); err != nil {
+		return err
+	}
 
 	contractData := struct{ Package, Hash string }{Package: parsed.Namespace, Hash: contractHash}
 	if err := renderToFile(contractTmpl, contractData, filepath.Join(outDir, "contract.go")); err != nil {
@@ -196,6 +199,7 @@ func runGenPluginGo(schemaPath string, parsed *schema.Schema, contractHash strin
 		name string
 	}{
 		{pluginMainTmpl, "main.go"},
+		{goPluginEnvelopeHelpersTmpl, "pluginart_helpers.go"},
 		{pluginHandlerTmpl, "plugin.go"},
 		{pluginGomodTmpl, "go.mod"},
 		{pluginDockerfileTmpl, "Dockerfile"},

@@ -1,14 +1,12 @@
 import * as path from 'path';
 import * as flatbuffers from 'flatbuffers';
-import { spawnPlugin, echo, kill } from './plugin_runner';
+import { PluginManager } from 'pluginart';
 import { CallRequest } from './echo/call-request';
 import { CallResponse } from './echo/call-response';
 import { EchoRequest } from './echo/echo-request';
 import { EchoResponse } from './echo/echo-response';
+import { echoClient } from './echo_client';
 import { RequestPayload } from './echo/request-payload';
-import { ResponsePayload } from './echo/response-payload';
-
-const DIR = path.resolve(__dirname, '../..');
 
 function buildEchoCallRequest(input: string): Buffer {
   const b = new flatbuffers.Builder(256);
@@ -36,31 +34,18 @@ function decodeEchoOutput(respBytes: Buffer): string {
 }
 
 async function main(): Promise<void> {
-  const goPlugin = await spawnPlugin(
-    path.join(DIR, 'plugin-go', 'plugin-go'),
-    [],
-    'go',
-  );
-
-  const pyPlugin = await spawnPlugin(
-    'python3',
-    [path.join(DIR, 'plugin-py', 'plugin.py')],
-    'py',
-  );
-
+  process.chdir(path.resolve(__dirname, '..'));
   const requestBytes = buildEchoCallRequest('hello from ts host');
-
-  const goRespBytes = await echo(goPlugin, requestBytes);
-  const goOutput = decodeEchoOutput(goRespBytes);
-
-  const pyRespBytes = await echo(pyPlugin, requestBytes);
-  const pyOutput = decodeEchoOutput(pyRespBytes);
-
-  console.log(`echo (go):     ${goOutput}`);
-  console.log(`echo (python): ${pyOutput}`);
-
-  kill(goPlugin);
-  kill(pyPlugin);
+  const manager = await PluginManager.fromConfig('pluginart.toml');
+  try {
+    await manager.start();
+    const goClient = new echoClient(manager, 'echo');
+    const pyClient = new echoClient(manager, 'echo-py');
+    console.log(`echo (go):     ${decodeEchoOutput(await goClient.Echo(requestBytes))}`);
+    console.log(`echo (python): ${decodeEchoOutput(await pyClient.Echo(requestBytes))}`);
+  } finally {
+    await manager.shutdown();
+  }
 }
 
 main().catch((err) => {

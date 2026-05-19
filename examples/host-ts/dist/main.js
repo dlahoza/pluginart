@@ -35,13 +35,13 @@ var __importStar = (this && this.__importStar) || (function () {
 Object.defineProperty(exports, "__esModule", { value: true });
 const path = __importStar(require("path"));
 const flatbuffers = __importStar(require("flatbuffers"));
-const plugin_runner_1 = require("./plugin_runner");
+const pluginart_1 = require("pluginart");
 const call_request_1 = require("./echo/call-request");
 const call_response_1 = require("./echo/call-response");
 const echo_request_1 = require("./echo/echo-request");
 const echo_response_1 = require("./echo/echo-response");
+const echo_client_1 = require("./echo_client");
 const request_payload_1 = require("./echo/request-payload");
-const DIR = path.resolve(__dirname, '../..');
 function buildEchoCallRequest(input) {
     const b = new flatbuffers.Builder(256);
     const inputOff = b.createString(input);
@@ -63,17 +63,19 @@ function decodeEchoOutput(respBytes) {
     return echoResp.output() ?? '';
 }
 async function main() {
-    const goPlugin = await (0, plugin_runner_1.spawnPlugin)(path.join(DIR, 'plugin-go', 'plugin-go'), [], 'go');
-    const pyPlugin = await (0, plugin_runner_1.spawnPlugin)('python3', [path.join(DIR, 'plugin-py', 'plugin.py')], 'py');
+    process.chdir(path.resolve(__dirname, '..'));
     const requestBytes = buildEchoCallRequest('hello from ts host');
-    const goRespBytes = await (0, plugin_runner_1.echo)(goPlugin, requestBytes);
-    const goOutput = decodeEchoOutput(goRespBytes);
-    const pyRespBytes = await (0, plugin_runner_1.echo)(pyPlugin, requestBytes);
-    const pyOutput = decodeEchoOutput(pyRespBytes);
-    console.log(`echo (go):     ${goOutput}`);
-    console.log(`echo (python): ${pyOutput}`);
-    (0, plugin_runner_1.kill)(goPlugin);
-    (0, plugin_runner_1.kill)(pyPlugin);
+    const manager = await pluginart_1.PluginManager.fromConfig('pluginart.toml');
+    try {
+        await manager.start();
+        const goClient = new echo_client_1.echoClient(manager, 'echo');
+        const pyClient = new echo_client_1.echoClient(manager, 'echo-py');
+        console.log(`echo (go):     ${decodeEchoOutput(await goClient.Echo(requestBytes))}`);
+        console.log(`echo (python): ${decodeEchoOutput(await pyClient.Echo(requestBytes))}`);
+    }
+    finally {
+        await manager.shutdown();
+    }
 }
 main().catch((err) => {
     console.error(err);

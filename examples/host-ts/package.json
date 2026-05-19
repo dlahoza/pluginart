@@ -6,6 +6,7 @@
     "start": "node dist/main.js"
   },
   "dependencies": {
+    "pluginart": "file:../../runtimes/typescript",
     "flatbuffers": "^25.2.10"
   },
   "devDependencies": {
