@@ -63,8 +63,8 @@ union RequestPayload {
 	want := &Schema{
 		Namespace: "v2",
 		Methods: []Method{
-			{Name: "Echo", RequestTable: "EchoRequest", ResponseTable: "EchoResponse"},
-			{Name: "Batch", RequestTable: "BatchRequest", ResponseTable: "BatchResponse"},
+			{Name: "Echo", RequestTable: "EchoRequest", ResponseTable: "EchoResponse", RequestFile: "echo-request", ResponseFile: "echo-response"},
+			{Name: "Batch", RequestTable: "BatchRequest", ResponseTable: "BatchResponse", RequestFile: "batch-request", ResponseFile: "batch-response"},
 		},
 	}
 	if !reflect.DeepEqual(got, want) {

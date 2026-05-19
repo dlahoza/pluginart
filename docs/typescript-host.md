@@ -19,12 +19,12 @@ const manager = await PluginManager.fromConfig('pluginart.toml');
 try {
   await manager.start();
   const client = new echoClient(manager, 'echo');
-  const responseBytes = await client.Echo(requestBytes);
+  const response = await client.Echo(builder, echoRequestOffset);
 } finally {
   await manager.shutdown();
 }
 ```
 
-`requestBytes` must be a complete schema `CallRequest` FlatBuffer. Decode `responseBytes` as the schema `CallResponse`.
+`builder` and `echoRequestOffset` are the FlatBuffers builder and table offset for the method payload, for example `EchoRequest`. Generated helpers wrap that payload in `CallRequest` and unwrap the returned `CallResponse`.
 
-The repository example in `examples/host-ts` keeps FlatBuffers request/response construction in application code.
+The repository example in `examples/host-ts` keeps FlatBuffers payload construction in application code.

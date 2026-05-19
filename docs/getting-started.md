@@ -41,7 +41,7 @@ TypeScript:
 pluginart gen client --lang typescript --schema schema/echo.fbs --out gen/typescript
 ```
 
-Go and Python clients include method wrappers plus generated helpers that wrap and unwrap the pluginart `CallRequest` / `CallResponse` envelope. Application code still builds the method payload table with FlatBuffers, then passes the builder and payload offset to the generated client. TypeScript clients expose method names over raw schema `CallRequest` bytes and return raw schema `CallResponse` bytes.
+Go, Python, and TypeScript clients include method wrappers plus generated helpers that wrap and unwrap the pluginart `CallRequest` / `CallResponse` envelope. Application code still builds the method payload table with FlatBuffers, then passes the builder and payload offset to the generated client.
 
 ## 3. Generate A Plugin
 
@@ -76,4 +76,4 @@ python ../host-py/main.py
 cd ../host-ts && npm install && npm run build && npm start
 ```
 
-The examples keep FlatBuffers payload construction visible. Go and Python examples use generated helpers for the pluginart RPC envelope; TypeScript still shows the raw envelope bytes.
+The examples keep FlatBuffers payload construction visible while generated helpers hide the pluginart RPC envelope.

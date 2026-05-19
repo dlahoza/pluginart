@@ -51,10 +51,23 @@ func parse(path string) (*Schema, error) {
 					Name:          name,
 					RequestTable:  m,
 					ResponseTable: name + "Response",
+					RequestFile:   kebab(m),
+					ResponseFile:  kebab(name + "Response"),
 				})
 			}
 		}
 	}
 
 	return &Schema{Namespace: ns, Methods: methods}, nil
+}
+
+func kebab(s string) string {
+	var b strings.Builder
+	for i, r := range s {
+		if i > 0 && r >= 'A' && r <= 'Z' {
+			b.WriteByte('-')
+		}
+		b.WriteRune(r)
+	}
+	return strings.ToLower(b.String())
 }

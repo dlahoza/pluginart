@@ -3,6 +3,8 @@
 *.exe
 bin/
 dist/
+!/examples/host-ts/dist/
+!/examples/host-ts/dist/**
 build/
 coverage/
 *.test

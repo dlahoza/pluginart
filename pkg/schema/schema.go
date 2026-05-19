@@ -9,9 +9,11 @@ type Schema struct {
 
 // Method represents a single RPC method inferred from the schema unions.
 type Method struct {
-	Name         string // e.g. "Example"
-	RequestTable string // e.g. "ExampleRequest"
+	Name          string // e.g. "Example"
+	RequestTable  string // e.g. "ExampleRequest"
 	ResponseTable string // e.g. "ExampleResponse"
+	RequestFile   string // e.g. "example-request"
+	ResponseFile  string // e.g. "example-response"
 }
 
 // ContractHash returns the SHA-256 hash of the schema file at path,

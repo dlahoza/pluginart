@@ -28,6 +28,9 @@ func runGenClientTypeScript(schemaPath string, parsed *schema.Schema, contractHa
 	if err := renderToFile(tsContractTmpl, data, filepath.Join(outDir, "contract.ts")); err != nil {
 		return err
 	}
+	if err := renderToFile(tsEnvelopeHelpersTmpl, data, filepath.Join(outDir, "pluginart_helpers.ts")); err != nil {
+		return err
+	}
 
 	outFile := filepath.Join(outDir, parsed.Namespace+"_client.ts")
 	if err := renderToFile(tsClientTmpl, data, outFile); err != nil {
@@ -64,6 +67,7 @@ func runGenPluginTypeScript(schemaPath string, parsed *schema.Schema, contractHa
 		name string
 	}{
 		{tsContractTmpl, "contract.ts"},
+		{tsPluginEnvelopeHelpersTmpl, "pluginart_helpers.ts"},
 		{tsPluginTmpl, "plugin.ts"},
 		{tsHandlerTmpl, "handler.ts"},
 		{tsPackageJSONTmpl, "package.json"},

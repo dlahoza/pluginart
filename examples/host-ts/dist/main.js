@@ -36,42 +36,30 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const path = __importStar(require("path"));
 const flatbuffers = __importStar(require("flatbuffers"));
 const pluginart_1 = require("pluginart");
-const call_request_1 = require("./echo/call-request");
-const call_response_1 = require("./echo/call-response");
 const echo_request_1 = require("./echo/echo-request");
-const echo_response_1 = require("./echo/echo-response");
 const echo_client_1 = require("./echo_client");
-const request_payload_1 = require("./echo/request-payload");
-function buildEchoCallRequest(input) {
+function buildEchoPayload(input) {
     const b = new flatbuffers.Builder(256);
     const inputOff = b.createString(input);
     echo_request_1.EchoRequest.startEchoRequest(b);
     echo_request_1.EchoRequest.addInput(b, inputOff);
     const echoReqOff = echo_request_1.EchoRequest.endEchoRequest(b);
-    call_request_1.CallRequest.startCallRequest(b);
-    call_request_1.CallRequest.addRequestId(b, BigInt(1));
-    call_request_1.CallRequest.addPayloadType(b, request_payload_1.RequestPayload.EchoRequest);
-    call_request_1.CallRequest.addPayload(b, echoReqOff);
-    const reqOff = call_request_1.CallRequest.endCallRequest(b);
-    call_request_1.CallRequest.finishCallRequestBuffer(b, reqOff);
-    return Buffer.from(b.asUint8Array());
+    return { builder: b, payload: echoReqOff };
 }
-function decodeEchoOutput(respBytes) {
-    const bb = new flatbuffers.ByteBuffer(new Uint8Array(respBytes));
-    const resp = call_response_1.CallResponse.getRootAsCallResponse(bb);
-    const echoResp = resp.payload(new echo_response_1.EchoResponse());
-    return echoResp.output() ?? '';
+function decodeEchoOutput(response) {
+    return response.output() ?? '';
 }
 async function main() {
     process.chdir(path.resolve(__dirname, '..'));
-    const requestBytes = buildEchoCallRequest('hello from ts host');
     const manager = await pluginart_1.PluginManager.fromConfig('pluginart.toml');
     try {
         await manager.start();
         const goClient = new echo_client_1.echoClient(manager, 'echo');
         const pyClient = new echo_client_1.echoClient(manager, 'echo-py');
-        console.log(`echo (go):     ${decodeEchoOutput(await goClient.Echo(requestBytes))}`);
-        console.log(`echo (python): ${decodeEchoOutput(await pyClient.Echo(requestBytes))}`);
+        let request = buildEchoPayload('hello from ts host');
+        console.log(`echo (go):     ${decodeEchoOutput(await goClient.Echo(request.builder, request.payload))}`);
+        request = buildEchoPayload('hello from ts host');
+        console.log(`echo (python): ${decodeEchoOutput(await pyClient.Echo(request.builder, request.payload))}`);
     }
     finally {
         await manager.shutdown();
