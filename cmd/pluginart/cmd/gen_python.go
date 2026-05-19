@@ -28,6 +28,9 @@ func runGenClientPython(schemaPath string, parsed *schema.Schema, contractHash s
 	if err := renderToFile(pyContractTmpl, data, filepath.Join(outDir, "contract.py")); err != nil {
 		return err
 	}
+	if err := renderToFile(pyEnvelopeHelpersTmpl, data, filepath.Join(outDir, "pluginart_helpers.py")); err != nil {
+		return err
+	}
 
 	outFile := filepath.Join(outDir, parsed.Namespace+"_client.py")
 	if err := renderToFile(pyClientTmpl, data, outFile); err != nil {
@@ -64,6 +67,7 @@ func runGenPluginPython(schemaPath string, parsed *schema.Schema, contractHash s
 		name string
 	}{
 		{pyContractTmpl, "contract.py"},
+		{pyPluginEnvelopeHelpersTmpl, "pluginart_helpers.py"},
 		{pyPluginTmpl, "plugin.py"},
 		{pyHandlerTmpl, "handler.py"},
 		{pyRequirementsTmpl, "requirements.txt"},

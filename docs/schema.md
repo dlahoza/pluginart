@@ -28,4 +28,4 @@ Each `RequestPayload` union member becomes a method by removing the `Request` su
 
 The contract hash is `sha256:` plus the SHA-256 of the raw schema file bytes. Hosts send it during handshake; plugins compare it to their generated `CONTRACT_HASH` or `ContractHash`.
 
-Generated Go clients hide the pluginart RPC envelope with method-level helpers, but developers still build the method payload table with FlatBuffers. Generated Python and TypeScript clients do not build field-level request objects yet. They provide method wrappers over complete schema `CallRequest` bytes.
+Generated Go and Python clients hide the pluginart RPC envelope with method-level helpers, but developers still build the method payload table with FlatBuffers. Generated TypeScript clients do not build field-level request objects yet. They provide method wrappers over complete schema `CallRequest` bytes.

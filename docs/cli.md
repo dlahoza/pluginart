@@ -20,7 +20,7 @@ pluginart gen client --lang python --schema schema/echo.fbs --out gen/python
 pluginart gen client --lang typescript --schema schema/echo.fbs --out gen/typescript
 ```
 
-Go output includes FlatBuffers modules, a generated client, `pluginart_helpers.go` envelope helpers, and `contract.go`. Python output includes FlatBuffers Python modules, `<namespace>_client.py`, and `contract.py`. TypeScript output includes FlatBuffers TypeScript modules, `<namespace>_client.ts`, and `contract.ts`.
+Go output includes FlatBuffers modules, a generated client, `pluginart_helpers.go` envelope helpers, and `contract.go`. Python output includes FlatBuffers Python modules, `<namespace>_client.py`, `pluginart_helpers.py`, and `contract.py`. TypeScript output includes FlatBuffers TypeScript modules, `<namespace>_client.ts`, and `contract.ts`.
 
 ## `pluginart gen plugin`
 

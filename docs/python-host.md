@@ -17,9 +17,9 @@ from gen.echo_client import echoClient
 
 with PluginManager.from_config("pluginart.toml") as manager:
     client = echoClient(manager, "echo")
-    response_bytes = client.Echo(request_bytes)
+    response = client.Echo(builder, echo_request_offset)
 ```
 
-`request_bytes` must be a complete schema `CallRequest` FlatBuffer. Decode `response_bytes` as the schema `CallResponse`.
+`builder` and `echo_request_offset` are the FlatBuffers builder and table offset for the method payload, for example `EchoRequest`. Generated helpers wrap that payload in `CallRequest` and unwrap the returned `CallResponse`.
 
 The repository example in `examples/host-py` calls both `examples/plugin-go/plugin-go` and `examples/plugin-py/plugin.py`.

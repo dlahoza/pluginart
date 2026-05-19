@@ -17,7 +17,7 @@ Runtime packages are published as:
 
 ## Mental Model
 
-The schema defines payload tables and method names. Generated clients give host code method wrappers. The host runtime starts, health-checks, restarts, calls, and shuts down plugins. Go generation hides the pluginart RPC envelope while still using FlatBuffers payload builders. In Python and TypeScript, generated clients currently accept raw schema `CallRequest` FlatBuffers bytes and return raw `CallResponse` bytes; app code still builds and decodes those payloads.
+The schema defines payload tables and method names. Generated clients give host code method wrappers. The host runtime starts, health-checks, restarts, calls, and shuts down plugins. Go and Python generation hide the pluginart RPC envelope while still using FlatBuffers payload builders. TypeScript clients currently accept raw schema `CallRequest` FlatBuffers bytes and return raw `CallResponse` bytes.
 
 ## Quickstart: Go Host
 
@@ -42,9 +42,11 @@ Python hosts use:
 
 ```python
 from pluginart import PluginManager
+from gen.echo_client import echoClient
 
 with PluginManager.from_config("pluginart.toml") as manager:
-    response = manager.call("echo", request_bytes)
+    client = echoClient(manager, "echo")
+    response = client.Echo(builder, echo_request_offset)
 ```
 
 ## Quickstart: TypeScript Host

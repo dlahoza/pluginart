@@ -12,6 +12,7 @@ coverage/
 
 # Go
 .gocache/
+.golangci-cache/
 
 # Python
 __pycache__/
