@@ -10,7 +10,11 @@
   "type": "commonjs",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
-  "files": ["dist", "!dist/test", "README.md"],
+  "files": [
+    "dist",
+    "!dist/test",
+    "README.md"
+  ],
   "engines": {
     "node": ">=22"
   },
@@ -34,7 +38,6 @@
     "typescript": "^5.0.0"
   },
   "publishConfig": {
-    "access": "public",
-    "provenance": true
+    "access": "public"
   }
 }
