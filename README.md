@@ -99,9 +99,9 @@ Each host example calls the binary `echo` plugins and the Dockerized `repeat` pl
 
 Pluginart has a dedicated benchmark suite in [bench](bench/README.md). It measures runtime overhead with raw payloads and no generated schema code, so the results focus on framing, calls, manager lookup, handshake, and plugin server dispatch.
 
-The suite covers host manager calls, direct protocol client calls, and plugin server dispatch for Go, Python, and TypeScript. Each runtime is tested against its own benchmark plugin. CI runs every case with 100 calls per payload size and uploads the benchmark output as an artifact.
+The suite covers host manager calls, direct protocol client calls, and plugin server dispatch for Go, Python, and TypeScript. Each runtime is tested against its own benchmark plugin. CI runs every case for 10 seconds and uploads the benchmark output as an artifact.
 
-Local 100x run on an Apple M5:
+Latest local 100x run on an Apple M5:
 
 | Go benchmark | Payload | ns/op | MB/s | B/op | allocs/op |
 | --- | ---: | ---: | ---: | ---: | ---: |
@@ -142,9 +142,9 @@ Local 100x run on an Apple M5:
 Run the suite locally:
 
 ```bash
-go test -tags bench ./bench/go -run TestBench -bench Benchmark -benchmem -benchtime=100x -count=1
-.venv/bin/python bench/python/run_bench.py --iterations 100 --json bench-results/python.json
-node --expose-gc bench/typescript/dist/run-bench.js --iterations 100 --json bench-results/typescript.json
+go test -tags bench ./bench/go -run TestBench -bench Benchmark -benchmem -benchtime=10s -count=1
+.venv/bin/python bench/python/run_bench.py --duration 10s --json bench-results/python.json
+node --expose-gc bench/typescript/dist/run-bench.js --duration 10s --json bench-results/typescript.json
 ```
 
 ## Docs

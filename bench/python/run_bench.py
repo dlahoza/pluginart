@@ -113,33 +113,39 @@ contract_hash = "{CONTRACT_HASH}"
 def time_calls(
     benchmark: str,
     payload_size: int,
-    iterations: int,
+    duration: float,
     call: Callable[[bytes], bytes],
+    iterations: int | None = None,
 ) -> Result:
     payload = b"x" * payload_size
     gc.collect()
     tracemalloc.start()
     before_current, _ = tracemalloc.get_traced_memory()
     start = time.perf_counter_ns()
-    for _ in range(iterations):
+    calls = 0
+    deadline = time.perf_counter() + duration
+    while iterations is None or calls < iterations:
         resp = call(payload)
         if len(resp) != len(payload):
             raise RuntimeError(f"response size {len(resp)} != {len(payload)}")
+        calls += 1
+        if iterations is None and calls >= 1 and time.perf_counter() >= deadline:
+            break
     elapsed = time.perf_counter_ns() - start
     current, peak = tracemalloc.get_traced_memory()
     tracemalloc.stop()
-    ns_per_op = elapsed // iterations
+    ns_per_op = elapsed // calls
     retained = max(0, current - before_current)
     peak_delta = max(0, peak - before_current)
     return Result(
         runtime="python",
         benchmark=benchmark,
         payload_bytes=payload_size,
-        iterations=iterations,
+        iterations=calls,
         ns_per_op=ns_per_op,
-        bytes_per_sec=int((payload_size * iterations * 1_000_000_000) / elapsed),
-        heap_peak_bytes_per_op=peak_delta // iterations,
-        heap_retained_bytes_per_op=retained // iterations,
+        bytes_per_sec=int((payload_size * calls * 1_000_000_000) / elapsed),
+        heap_peak_bytes_per_op=peak_delta // calls,
+        heap_retained_bytes_per_op=retained // calls,
     )
 
 
@@ -195,21 +201,34 @@ def assert_plugin_memory_growth(pid: int, call: Callable[[bytes], bytes]) -> Non
 
 
 def print_table(results: list[Result]) -> None:
-    print("| Benchmark | Payload | ns/op | MB/s | Peak heap/op | Retained heap/op |")
-    print("| --- | ---: | ---: | ---: | ---: | ---: |")
+    print("| Benchmark | Payload | Calls | ns/op | MB/s | Peak heap/op | Retained heap/op |")
+    print("| --- | ---: | ---: | ---: | ---: | ---: | ---: |")
     for result in results:
         mbps = result.bytes_per_sec / (1024 * 1024)
         print(
-            f"| {result.benchmark} | {result.payload_bytes} | {result.ns_per_op} | {mbps:.2f} | "
+            f"| {result.benchmark} | {result.payload_bytes} | {result.iterations} | {result.ns_per_op} | {mbps:.2f} | "
             f"{result.heap_peak_bytes_per_op} B/op | {result.heap_retained_bytes_per_op} B/op |"
         )
 
 
+def parse_duration(value: str) -> float:
+    value = value.strip()
+    if value.endswith("ms"):
+        return float(value[:-2]) / 1000
+    if value.endswith("s"):
+        return float(value[:-1])
+    if value.endswith("m"):
+        return float(value[:-1]) * 60
+    return float(value)
+
+
 def main() -> int:
     parser = argparse.ArgumentParser()
-    parser.add_argument("--iterations", type=int, default=100)
+    parser.add_argument("--duration", default="10s")
+    parser.add_argument("--iterations", type=int)
     parser.add_argument("--json", type=Path)
     args = parser.parse_args()
+    duration = parse_duration(args.duration)
 
     addr, proc = start_python_plugin()
     results: list[Result] = []
@@ -217,7 +236,7 @@ def main() -> int:
         client = protocol_client(addr)
         try:
             for size in SIZES:
-                results.append(time_calls("protocol_client", size, args.iterations, client.call))
+                results.append(time_calls("protocol_client", size, duration, client.call, args.iterations))
             assert_memory_growth(client.call)
         finally:
             client.close()
@@ -225,7 +244,7 @@ def main() -> int:
         manager = manager_client(addr)
         try:
             for size in SIZES:
-                results.append(time_calls("plugin_manager", size, args.iterations, lambda p: manager.call(PLUGIN_NAME, p)))
+                results.append(time_calls("plugin_manager", size, duration, lambda p: manager.call(PLUGIN_NAME, p), args.iterations))
             assert_memory_growth(lambda p: manager.call(PLUGIN_NAME, p))
         finally:
             manager.shutdown()
@@ -233,7 +252,7 @@ def main() -> int:
         server_client = protocol_client(addr)
         try:
             for size in SIZES:
-                results.append(time_calls("plugin_server", size, args.iterations, server_client.call))
+                results.append(time_calls("plugin_server", size, duration, server_client.call, args.iterations))
             assert_plugin_memory_growth(proc.pid, server_client.call)
         finally:
             server_client.close()

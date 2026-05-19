@@ -12,7 +12,7 @@ This suite measures Pluginart runtime overhead without generated schema bindings
 
 Go uses the standard benchmark allocation counters, so its output includes `B/op` and `allocs/op`. Python and TypeScript report `Peak heap/op` and `Retained heap/op` because their standard runtimes do not expose exact allocation counts like Go.
 
-Payload sizes are `10`, `1000`, and `10000` bytes. CI runs every case with `100x`.
+Payload sizes are `10`, `1000`, and `10000` bytes. CI runs every case for `10s`.
 
 ## Local Setup
 
@@ -46,19 +46,19 @@ Create a Python virtualenv with Homebrew Python and install the Python runtime:
 Run Go host, Go protocol client, and Go plugin server benchmarks:
 
 ```bash
-go test -tags bench ./bench/go -run TestBench -bench Benchmark -benchmem -benchtime=100x -count=1
+go test -tags bench ./bench/go -run TestBench -bench Benchmark -benchmem -benchtime=10s -count=1
 ```
 
 Run Python host and protocol client benchmarks:
 
 ```bash
-.venv/bin/python bench/python/run_bench.py --iterations 100 --json bench-results/python.json
+.venv/bin/python bench/python/run_bench.py --duration 10s --json bench-results/python.json
 ```
 
 Run TypeScript host and protocol client benchmarks:
 
 ```bash
-node --expose-gc bench/typescript/dist/run-bench.js --iterations 100 --json bench-results/typescript.json
+node --expose-gc bench/typescript/dist/run-bench.js --duration 10s --json bench-results/typescript.json
 ```
 
 ## Memory Checks

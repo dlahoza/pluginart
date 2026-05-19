@@ -3,7 +3,7 @@
   "type": "commonjs",
   "scripts": {
     "build": "tsc",
-    "bench": "node --expose-gc dist/run-bench.js --iterations 100"
+    "bench": "node --expose-gc dist/run-bench.js --duration 10s"
   },
   "devDependencies": {
     "@types/node": "^22.0.0",

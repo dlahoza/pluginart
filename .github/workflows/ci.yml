@@ -221,13 +221,13 @@ jobs:
       - name: Run Go benchmarks
         run: |
           mkdir -p bench-results
-          go test -tags bench ./bench/go -run TestBench -bench Benchmark -benchmem -benchtime=100x -count=1 | tee bench-results/go.txt
+          go test -tags bench ./bench/go -run TestBench -bench Benchmark -benchmem -benchtime=10s -count=1 | tee bench-results/go.txt
       - name: Run Python benchmarks
         run: |
-          python bench/python/run_bench.py --iterations 100 --json bench-results/python.json
+          python bench/python/run_bench.py --duration 10s --json bench-results/python.json
       - name: Run TypeScript benchmarks
         run: |
-          node --expose-gc bench/typescript/dist/run-bench.js --iterations 100 --json bench-results/typescript.json
+          node --expose-gc bench/typescript/dist/run-bench.js --duration 10s --json bench-results/typescript.json
       - uses: actions/upload-artifact@v4
         with:
           name: pluginart-benchmarks

@@ -108,20 +108,25 @@ contract_hash = "${CONTRACT_HASH}"
 async function timeCalls(
   benchmark: string,
   payloadSize: number,
-  iterations: number,
+  durationMs: number,
   call: (payload: Buffer) => Promise<Buffer>,
+  iterations?: number,
 ): Promise<Result> {
   const payload = Buffer.alloc(payloadSize, 'x');
   if (global.gc) global.gc();
   const before = process.memoryUsage().heapUsed;
   let peak = before;
   const start = performance.now();
-  for (let i = 0; i < iterations; i += 1) {
+  let calls = 0;
+  const deadline = start + durationMs;
+  while (iterations === undefined || calls < iterations) {
     const resp = await call(payload);
     if (resp.length !== payload.length) {
       throw new Error(`response size ${resp.length} != ${payload.length}`);
     }
+    calls += 1;
     peak = Math.max(peak, process.memoryUsage().heapUsed);
+    if (iterations === undefined && calls >= 1 && performance.now() >= deadline) break;
   }
   const elapsedNs = Math.round((performance.now() - start) * 1_000_000);
   if (global.gc) global.gc();
@@ -132,11 +137,11 @@ async function timeCalls(
     runtime: 'typescript',
     benchmark,
     payload_bytes: payloadSize,
-    iterations,
-    ns_per_op: Math.round(elapsedNs / iterations),
-    bytes_per_sec: Math.round((payloadSize * iterations * 1_000_000_000) / elapsedNs),
-    heap_peak_bytes_per_op: Math.round(peakDelta / iterations),
-    heap_retained_bytes_per_op: Math.round(retained / iterations),
+    iterations: calls,
+    ns_per_op: Math.round(elapsedNs / calls),
+    bytes_per_sec: Math.round((payloadSize * calls * 1_000_000_000) / elapsedNs),
+    heap_peak_bytes_per_op: Math.round(peakDelta / calls),
+    heap_retained_bytes_per_op: Math.round(retained / calls),
   };
 }
 
@@ -202,12 +207,12 @@ async function assertPluginMemoryGrowth(pid: number, call: (payload: Buffer) => 
 }
 
 function printTable(results: Result[]): void {
-  console.log('| Benchmark | Payload | ns/op | MB/s | Peak heap/op | Retained heap/op |');
-  console.log('| --- | ---: | ---: | ---: | ---: | ---: |');
+  console.log('| Benchmark | Payload | Calls | ns/op | MB/s | Peak heap/op | Retained heap/op |');
+  console.log('| --- | ---: | ---: | ---: | ---: | ---: | ---: |');
   for (const result of results) {
     const mbps = result.bytes_per_sec / (1024 * 1024);
     console.log(
-      `| ${result.benchmark} | ${result.payload_bytes} | ${result.ns_per_op} | ${mbps.toFixed(2)} | ` +
+      `| ${result.benchmark} | ${result.payload_bytes} | ${result.iterations} | ${result.ns_per_op} | ${mbps.toFixed(2)} | ` +
       `${result.heap_peak_bytes_per_op} B/op | ${result.heap_retained_bytes_per_op} B/op |`,
     );
   }
@@ -218,8 +223,17 @@ function argValue(name: string): string | undefined {
   return index >= 0 ? process.argv[index + 1] : undefined;
 }
 
+function parseDuration(value: string): number {
+  if (value.endsWith('ms')) return Number(value.slice(0, -2));
+  if (value.endsWith('s')) return Number(value.slice(0, -1)) * 1000;
+  if (value.endsWith('m')) return Number(value.slice(0, -1)) * 60_000;
+  return Number(value);
+}
+
 async function main(): Promise<void> {
-  const iterations = Number(argValue('--iterations') ?? '100');
+  const iterationsArg = argValue('--iterations');
+  const iterations = iterationsArg === undefined ? undefined : Number(iterationsArg);
+  const durationMs = parseDuration(argValue('--duration') ?? '10s');
   const jsonPath = argValue('--json');
   const { addr, proc } = await startTypeScriptPlugin();
   const results: Result[] = [];
@@ -227,7 +241,7 @@ async function main(): Promise<void> {
     const client = await protocolClient(addr);
     try {
       for (const size of SIZES) {
-        results.push(await timeCalls('protocol_client', size, iterations, (payload) => client.call(payload)));
+        results.push(await timeCalls('protocol_client', size, durationMs, (payload) => client.call(payload), iterations));
       }
       await assertMemoryGrowth((payload) => client.call(payload));
     } finally {
@@ -237,7 +251,7 @@ async function main(): Promise<void> {
     const manager = await managerClient(addr);
     try {
       for (const size of SIZES) {
-        results.push(await timeCalls('plugin_manager', size, iterations, (payload) => manager.call(PLUGIN_NAME, payload)));
+        results.push(await timeCalls('plugin_manager', size, durationMs, (payload) => manager.call(PLUGIN_NAME, payload), iterations));
       }
       await assertMemoryGrowth((payload) => manager.call(PLUGIN_NAME, payload));
     } finally {
@@ -247,7 +261,7 @@ async function main(): Promise<void> {
     const serverClient = await protocolClient(addr);
     try {
       for (const size of SIZES) {
-        results.push(await timeCalls('plugin_server', size, iterations, (payload) => serverClient.call(payload)));
+        results.push(await timeCalls('plugin_server', size, durationMs, (payload) => serverClient.call(payload), iterations));
       }
       if (proc.pid !== undefined) {
         await assertPluginMemoryGrowth(proc.pid, (payload) => serverClient.call(payload));
