@@ -153,7 +153,8 @@ Handshake messages use FlatBuffers (defined in `pluginart.schema.fbs`, pre-compi
 | `pluginart validate`                       | ✓       |
 | Protocol docs (`docs/protocol.md`)         | ✓       |
 | Per-call deadline and cancellation         | v0.3    |
-| Compression (LZ4 / ZSTD)                  | v0.5    |
+| Observability (OTel)                       | v0.4    |
+| Compression (LZ4 / ZSTD)                   | v0.5    |
 | TLS for remote mode                        | v0.5    |
 | Shared memory fast path                    | v0.6    |
 
