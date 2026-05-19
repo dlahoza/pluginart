@@ -194,23 +194,44 @@ jobs:
           echo "$output" | grep -qF 'repeat (python): hahaha'
           echo "$output" | grep -qF 'repeat (ts):     hahaha'
 
-  benchmark-host-go:
-    name: "Benchmark: host-go repeat Docker plugins"
+  benchmark-runtime:
+    name: "Benchmark: runtime overhead"
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v5
         with:
-          go-version-file: examples/host-go/go.mod
-      - name: Build repeat Docker plugins
+          go-version-file: go.mod
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install Python runtime
+        run: python -m pip install -e runtimes/python
+      - name: Build TypeScript runtime
+        run: cd runtimes/typescript && npm install && npm run build
+      - name: Build TypeScript benchmark helpers
+        run: cd bench/typescript && npm install && npm run build
+      - name: Build Go benchmark plugin
         run: |
-          docker build -f examples/plugin-repeat-go/Dockerfile -t pluginart-repeat-go:local .
-          docker build -f examples/plugin-repeat-py/Dockerfile -t pluginart-repeat-py:local .
-          docker build -f examples/plugin-repeat-ts/Dockerfile -t pluginart-repeat-ts:local .
-      - name: Run repeat communication benchmarks
+          mkdir -p bench/bin
+          go build -o bench/bin/pluginart-bench-go-plugin ./bench/go/bench_plugin
+      - name: Run Go benchmarks
         run: |
-          cd examples/host-go
-          go test -run TestRepeatDockerMemoryGrowth -bench BenchmarkRepeatDockerComparison -benchmem -benchtime=100x -count=1
+          mkdir -p bench-results
+          go test -tags bench ./bench/go -run TestBench -bench Benchmark -benchmem -benchtime=100x -count=1 | tee bench-results/go.txt
+      - name: Run Python benchmarks
+        run: |
+          python bench/python/run_bench.py --iterations 100 --json bench-results/python.json
+      - name: Run TypeScript benchmarks
+        run: |
+          node --expose-gc bench/typescript/dist/run-bench.js --iterations 100 --json bench-results/typescript.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: pluginart-benchmarks
+          path: bench-results/
 
   integration-host-ts:
     name: "Integration: host-ts → plugin-go + plugin-py + plugin-ts"

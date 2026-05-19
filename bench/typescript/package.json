@@ -1,0 +1,12 @@
+{
+  "private": true,
+  "type": "commonjs",
+  "scripts": {
+    "build": "tsc",
+    "bench": "node --expose-gc dist/run-bench.js --iterations 100"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "typescript": "^5.0.0"
+  }
+}

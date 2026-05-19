@@ -97,19 +97,54 @@ Each host example calls the binary `echo` plugins and the Dockerized `repeat` pl
 
 ## Benchmarks
 
-Host-go to Dockerized repeat plugins over TCP, using 100 calls per case on an Apple M5. The benchmark reuses one request payload per case and reports Go host allocations for the call plus zero-copy response decode.
+Pluginart has a dedicated benchmark suite in [bench](bench/README.md). It measures runtime overhead with raw payloads and no generated schema code, so the results focus on framing, calls, manager lookup, handshake, and plugin server dispatch.
 
-| Response size | Go plugin | Python plugin | TypeScript plugin | Host allocations |
-| --- | ---: | ---: | ---: | ---: |
-| 10 bytes | 102670 ns/op | 137980 ns/op | 174167 ns/op | 200 B/op, 6 allocs/op |
-| 1000 bytes | 122965 ns/op | 140032 ns/op | 192566 ns/op | 1288 B/op, 6 allocs/op |
-| 10000 bytes | 183255 ns/op | 195667 ns/op | 270846 ns/op | 10376 B/op, 6 allocs/op |
+The suite covers host manager calls, direct protocol client calls, and plugin server dispatch for Go, Python, and TypeScript. Each runtime is tested against its own benchmark plugin. CI runs every case with 100 calls per payload size and uploads the benchmark output as an artifact.
 
-Run the same comparison locally:
+Local 100x run on an Apple M5:
+
+| Go benchmark | Payload | ns/op | MB/s | B/op | allocs/op |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| host manager | 10 | 18884 | 0.53 | 243 | 10 |
+| host manager | 1000 | 34090 | 29.33 | 2259 | 10 |
+| host manager | 10000 | 36719 | 272.34 | 20691 | 10 |
+| protocol client | 10 | 27812 | 0.36 | 240 | 10 |
+| protocol client | 1000 | 18840 | 53.08 | 2256 | 10 |
+| protocol client | 10000 | 22429 | 445.85 | 20688 | 10 |
+| plugin server | 10 | 20352 | 0.49 | 127 | 5 |
+| plugin server | 1000 | 22088 | 45.27 | 1134 | 5 |
+| plugin server | 10000 | 25800 | 387.59 | 10350 | 5 |
+
+| Python benchmark | Payload | ns/op | MB/s | Peak heap/op | Retained heap/op |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| protocol client | 10 | 28662 | 0.33 | 10 B | 4 B |
+| protocol client | 1000 | 30949 | 30.81 | 50 B | 14 B |
+| protocol client | 10000 | 51771 | 184.21 | 410 B | 104 B |
+| plugin manager | 10 | 45067 | 0.21 | 10 B | 4 B |
+| plugin manager | 1000 | 35494 | 26.87 | 50 B | 14 B |
+| plugin manager | 10000 | 30645 | 311.19 | 410 B | 104 B |
+| plugin server | 10 | 20280 | 0.47 | 10 B | 4 B |
+| plugin server | 1000 | 22591 | 42.21 | 50 B | 14 B |
+| plugin server | 10000 | 25730 | 370.63 | 410 B | 104 B |
+
+| TypeScript benchmark | Payload | ns/op | MB/s | Peak heap/op | Retained heap/op |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| protocol client | 10 | 63272 | 0.15 | 7043 B | 1261 B |
+| protocol client | 1000 | 56728 | 16.81 | 5610 B | 337 B |
+| protocol client | 10000 | 66761 | 142.85 | 5597 B | 105 B |
+| plugin manager | 10 | 45313 | 0.21 | 6028 B | 354 B |
+| plugin manager | 1000 | 43971 | 21.69 | 5705 B | 90 B |
+| plugin manager | 10000 | 48949 | 194.83 | 5717 B | 3 B |
+| plugin server | 10 | 51640 | 0.18 | 4921 B | 96 B |
+| plugin server | 1000 | 38360 | 24.86 | 4940 B | 0 B |
+| plugin server | 10000 | 47253 | 201.82 | 5207 B | 90 B |
+
+Run the suite locally:
 
 ```bash
-cd examples/host-go
-go test -run TestRepeatDockerMemoryGrowth -bench BenchmarkRepeatDockerComparison -benchmem -benchtime=100x -count=1
+go test -tags bench ./bench/go -run TestBench -bench Benchmark -benchmem -benchtime=100x -count=1
+.venv/bin/python bench/python/run_bench.py --iterations 100 --json bench-results/python.json
+node --expose-gc bench/typescript/dist/run-bench.js --iterations 100 --json bench-results/typescript.json
 ```
 
 ## Docs

@@ -11,6 +11,7 @@ coverage/
 *.out
 *.prof
 *.tgz
+bench-results/
 
 # Go
 .gocache/
