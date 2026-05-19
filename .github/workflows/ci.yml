@@ -40,3 +40,52 @@ jobs:
         with:
           go-version-file: go.mod
       - run: go test -race ./...
+
+  integration-host-go:
+    name: "Integration: host-go → plugin-go + plugin-py"
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: examples/host-go/go.mod
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install Python deps
+        run: pip install -r examples/plugin-py/requirements.txt
+      - name: Build plugin-go
+        run: cd examples/plugin-go && go build -o plugin-go .
+      - name: Run host-go
+        run: |
+          output=$(cd examples/host-go && go run . 2>/dev/null)
+          echo "$output"
+          echo "$output" | grep -qF 'echo (go):     HELLO FROM HOST'
+          echo "$output" | grep -qF 'echo (python): HELLO FROM HOST'
+
+  integration-host-ts:
+    name: "Integration: host-ts → plugin-go + plugin-py"
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: examples/plugin-go/go.mod
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install Python deps
+        run: pip install -r examples/plugin-py/requirements.txt
+      - name: Build plugin-go
+        run: cd examples/plugin-go && go build -o plugin-go .
+      - name: Build host-ts
+        run: cd examples/host-ts && npm ci && npm run build
+      - name: Run host-ts
+        run: |
+          output=$(cd examples/host-ts && node dist/main.js 2>/dev/null)
+          echo "$output"
+          echo "$output" | grep -qF 'echo (go):     HELLO FROM TS HOST'
+          echo "$output" | grep -qF 'echo (python): HELLO FROM TS HOST'
