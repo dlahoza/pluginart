@@ -26,6 +26,10 @@ type lockedConn struct {
 }
 
 func newConn(c net.Conn) Conn {
+	return &conn{c: c}
+}
+
+func newLockedConn(c net.Conn) *lockedConn {
 	return &lockedConn{conn: conn{c: c}}
 }
 
@@ -48,7 +52,8 @@ func (c *conn) Send(msgType MsgType, payload []byte) error {
 		return nil
 	}
 
-	bufs := net.Buffers{hdr[:], payload}
+	parts := [2][]byte{hdr[:], payload}
+	bufs := net.Buffers(parts[:])
 	n, err := bufs.WriteTo(c.c)
 	if err != nil {
 		return err
@@ -60,23 +65,31 @@ func (c *conn) Send(msgType MsgType, payload []byte) error {
 }
 
 func (c *conn) Recv() (MsgType, []byte, error) {
+	msgType, payload, _, err := c.recvInto(nil)
+	return msgType, payload, err
+}
+
+func (c *conn) recvInto(buf []byte) (MsgType, []byte, []byte, error) {
 	var hdr [headerSize]byte
 	if _, err := io.ReadFull(c.c, hdr[:]); err != nil {
-		return 0, nil, err
+		return 0, nil, buf, err
 	}
 	if hdr[0] != magic[0] || hdr[1] != magic[1] || hdr[2] != magic[2] || hdr[3] != magic[3] {
-		return 0, nil, fmt.Errorf("invalid magic bytes")
+		return 0, nil, buf, fmt.Errorf("invalid magic bytes")
 	}
 	length := binary.LittleEndian.Uint32(hdr[4:8])
 	if length > maxFrameSize {
-		return 0, nil, fmt.Errorf("frame length %d exceeds max frame size", length)
+		return 0, nil, buf, fmt.Errorf("frame length %d exceeds max frame size", length)
 	}
 	msgType := MsgType(hdr[8])
-	payload := make([]byte, length)
-	if _, err := io.ReadFull(c.c, payload); err != nil {
-		return 0, nil, err
+	if cap(buf) < int(length) {
+		buf = make([]byte, length)
 	}
-	return msgType, payload, nil
+	payload := buf[:length]
+	if _, err := io.ReadFull(c.c, payload); err != nil {
+		return 0, nil, buf, err
+	}
+	return msgType, payload, buf, nil
 }
 
 func (c *conn) Close() error {

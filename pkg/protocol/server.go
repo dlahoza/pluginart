@@ -22,10 +22,11 @@ func (s *Server) serve() error {
 }
 
 func handleConn(c net.Conn, handler Handler, contractHash string) {
-	conn := newConn(c)
+	conn := conn{c: c}
 	defer func() { _ = conn.Close() }()
 
-	msgType, payload, err := conn.Recv()
+	var readBuf []byte
+	msgType, payload, readBuf, err := conn.recvInto(readBuf)
 	if err != nil || msgType != MsgHandshakeRequest {
 		return
 	}
@@ -41,10 +42,11 @@ func handleConn(c net.Conn, handler Handler, contractHash string) {
 
 	ctx := context.Background()
 	for {
-		msgType, payload, err := conn.Recv()
+		msgType, payload, nextBuf, err := conn.recvInto(readBuf)
 		if err != nil {
 			return
 		}
+		readBuf = nextBuf
 		switch msgType {
 		case MsgCallRequest:
 			result, err := handler.Handle(ctx, payload)

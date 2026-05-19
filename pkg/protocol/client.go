@@ -12,7 +12,7 @@ import (
 var globalSeq atomic.Uint64
 
 func connect(c net.Conn, pluginName, contractHash string) (*Client, error) {
-	conn := newConn(c)
+	conn := newLockedConn(c)
 
 	if err := conn.Send(MsgHandshakeRequest, buildHandshakeRequest(contractHash, pluginName)); err != nil {
 		_ = conn.Close()
@@ -37,13 +37,8 @@ func connect(c net.Conn, pluginName, contractHash string) (*Client, error) {
 	return &Client{conn: conn, contractHash: contractHash, pluginName: pluginName}, nil
 }
 
-// locked returns the lockedConn underlying cl.conn for serialised round-trips.
-func (cl *Client) locked() *lockedConn {
-	return cl.conn.(*lockedConn)
-}
-
 func (cl *Client) call(ctx context.Context, payload []byte) ([]byte, error) {
-	lc := cl.locked()
+	lc := cl.conn
 	lc.mu.Lock()
 	defer lc.mu.Unlock()
 
@@ -77,7 +72,7 @@ func (cl *Client) call(ctx context.Context, payload []byte) ([]byte, error) {
 }
 
 func (cl *Client) ping(ctx context.Context) error {
-	lc := cl.locked()
+	lc := cl.conn
 	lc.mu.Lock()
 	defer lc.mu.Unlock()
 

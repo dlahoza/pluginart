@@ -10,7 +10,7 @@ This suite measures Pluginart runtime overhead without generated schema bindings
 | Protocol client | direct protocol connect, call, framing, and response read |
 | Plugin server | handshake, frame read, handler dispatch, and response write |
 
-Go uses the standard benchmark allocation counters, so its output includes `B/op` and `allocs/op`. Python and TypeScript report `Peak heap/op` and `Retained heap/op` because their standard runtimes do not expose exact allocation counts like Go.
+Go uses the standard benchmark allocation counters, so its output includes `B/op` and `allocs/op`. Python and TypeScript report total peak and retained heap changes plus per-operation averages because their standard runtimes do not expose exact allocation counts like Go.
 
 Payload sizes are `10`, `1000`, and `10000` bytes. CI runs every case for `10s`.
 
@@ -47,6 +47,7 @@ Run Go host, Go protocol client, and Go plugin server benchmarks:
 
 ```bash
 go test -tags bench ./bench/go -run TestBench -bench Benchmark -benchmem -benchtime=10s -count=1
+go test ./pkg/protocol -run '^$' -bench BenchmarkHandleConnServer -benchmem -benchtime=10s -count=1
 ```
 
 Run Python host and protocol client benchmarks:

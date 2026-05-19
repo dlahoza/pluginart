@@ -21,6 +21,8 @@ interface Result {
   iterations: number;
   ns_per_op: number;
   bytes_per_sec: number;
+  heap_peak_bytes: number;
+  heap_retained_bytes: number;
   heap_peak_bytes_per_op: number;
   heap_retained_bytes_per_op: number;
 }
@@ -140,8 +142,10 @@ async function timeCalls(
     iterations: calls,
     ns_per_op: Math.round(elapsedNs / calls),
     bytes_per_sec: Math.round((payloadSize * calls * 1_000_000_000) / elapsedNs),
-    heap_peak_bytes_per_op: Math.round(peakDelta / calls),
-    heap_retained_bytes_per_op: Math.round(retained / calls),
+    heap_peak_bytes: peakDelta,
+    heap_retained_bytes: retained,
+    heap_peak_bytes_per_op: peakDelta / calls,
+    heap_retained_bytes_per_op: retained / calls,
   };
 }
 
@@ -207,13 +211,14 @@ async function assertPluginMemoryGrowth(pid: number, call: (payload: Buffer) => 
 }
 
 function printTable(results: Result[]): void {
-  console.log('| Benchmark | Payload | Calls | ns/op | MB/s | Peak heap/op | Retained heap/op |');
-  console.log('| --- | ---: | ---: | ---: | ---: | ---: | ---: |');
+  console.log('| Benchmark | Payload | Calls | ns/op | MB/s | Peak heap | Retained heap | Peak heap/op | Retained heap/op |');
+  console.log('| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |');
   for (const result of results) {
     const mbps = result.bytes_per_sec / (1024 * 1024);
     console.log(
       `| ${result.benchmark} | ${result.payload_bytes} | ${result.iterations} | ${result.ns_per_op} | ${mbps.toFixed(2)} | ` +
-      `${result.heap_peak_bytes_per_op} B/op | ${result.heap_retained_bytes_per_op} B/op |`,
+      `${result.heap_peak_bytes} B | ${result.heap_retained_bytes} B | ` +
+      `${result.heap_peak_bytes_per_op.toFixed(2)} B/op | ${result.heap_retained_bytes_per_op.toFixed(2)} B/op |`,
     );
   }
 }

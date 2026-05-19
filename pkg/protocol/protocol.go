@@ -65,7 +65,7 @@ func (s *Server) Serve() error {
 
 // Client is the host-side protocol client for a single plugin connection.
 type Client struct {
-	conn         Conn
+	conn         *lockedConn
 	contractHash string
 	pluginName   string
 }

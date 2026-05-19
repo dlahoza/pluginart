@@ -105,15 +105,15 @@ Latest local 100x run on an Apple M5:
 
 | Go benchmark | Payload | ns/op | MB/s | B/op | allocs/op |
 | --- | ---: | ---: | ---: | ---: | ---: |
-| host manager | 10 | 18884 | 0.53 | 243 | 10 |
-| host manager | 1000 | 34090 | 29.33 | 2259 | 10 |
-| host manager | 10000 | 36719 | 272.34 | 20691 | 10 |
-| protocol client | 10 | 27812 | 0.36 | 240 | 10 |
-| protocol client | 1000 | 18840 | 53.08 | 2256 | 10 |
-| protocol client | 10000 | 22429 | 445.85 | 20688 | 10 |
-| plugin server | 10 | 20352 | 0.49 | 127 | 5 |
-| plugin server | 1000 | 22088 | 45.27 | 1134 | 5 |
-| plugin server | 10000 | 25800 | 387.59 | 10350 | 5 |
+| host manager | 10 | 45702 | 0.22 | 131 | 5 |
+| host manager | 1000 | 40364 | 24.77 | 1138 | 5 |
+| host manager | 10000 | 42732 | 234.01 | 10355 | 5 |
+| protocol client | 10 | 35368 | 0.28 | 126 | 5 |
+| protocol client | 1000 | 35118 | 28.48 | 1134 | 5 |
+| protocol client | 10000 | 36048 | 277.41 | 10350 | 5 |
+| plugin server | 10 | 29444 | 0.34 | 126 | 5 |
+| plugin server | 1000 | 34707 | 28.81 | 1139 | 5 |
+| plugin server | 10000 | 38572 | 259.26 | 10357 | 5 |
 
 | Python benchmark | Payload | ns/op | MB/s | Peak heap/op | Retained heap/op |
 | --- | ---: | ---: | ---: | ---: | ---: |
@@ -143,6 +143,7 @@ Run the suite locally:
 
 ```bash
 go test -tags bench ./bench/go -run TestBench -bench Benchmark -benchmem -benchtime=10s -count=1
+go test ./pkg/protocol -run '^$' -bench BenchmarkHandleConnServer -benchmem -benchtime=10s -count=1
 .venv/bin/python bench/python/run_bench.py --duration 10s --json bench-results/python.json
 node --expose-gc bench/typescript/dist/run-bench.js --duration 10s --json bench-results/typescript.json
 ```

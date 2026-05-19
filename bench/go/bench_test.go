@@ -35,11 +35,11 @@ func (echoHandler) Handle(_ context.Context, payload []byte) ([]byte, error) {
 }
 
 func BenchmarkHostGoManager(b *testing.B) {
-	addr, closeServer := startInProcessServer(b)
-	defer closeServer()
-
 	for _, size := range benchSizes {
 		b.Run(fmt.Sprintf("payload_%d_bytes", size), func(b *testing.B) {
+			plugin := goBenchPlugin()
+			addr, stop := startPluginProcess(b, plugin)
+			defer stop()
 			manager := newRemoteManager(b, addr)
 			payload := bytes.Repeat([]byte("x"), size)
 
@@ -60,11 +60,11 @@ func BenchmarkHostGoManager(b *testing.B) {
 }
 
 func BenchmarkHostGoProtocolClient(b *testing.B) {
-	addr, closeServer := startInProcessServer(b)
-	defer closeServer()
-
 	for _, size := range benchSizes {
 		b.Run(fmt.Sprintf("payload_%d_bytes", size), func(b *testing.B) {
+			plugin := goBenchPlugin()
+			addr, stop := startPluginProcess(b, plugin)
+			defer stop()
 			client := newProtocolClient(b, addr)
 			defer client.Close()
 			payload := bytes.Repeat([]byte("x"), size)

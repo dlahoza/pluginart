@@ -36,8 +36,10 @@ class Result:
     iterations: int
     ns_per_op: int
     bytes_per_sec: int
-    heap_peak_bytes_per_op: int
-    heap_retained_bytes_per_op: int
+    heap_peak_bytes: int
+    heap_retained_bytes: int
+    heap_peak_bytes_per_op: float
+    heap_retained_bytes_per_op: float
 
 
 def free_tcp_addr() -> str:
@@ -144,8 +146,10 @@ def time_calls(
         iterations=calls,
         ns_per_op=ns_per_op,
         bytes_per_sec=int((payload_size * calls * 1_000_000_000) / elapsed),
-        heap_peak_bytes_per_op=peak_delta // calls,
-        heap_retained_bytes_per_op=retained // calls,
+        heap_peak_bytes=peak_delta,
+        heap_retained_bytes=retained,
+        heap_peak_bytes_per_op=peak_delta / calls,
+        heap_retained_bytes_per_op=retained / calls,
     )
 
 
@@ -201,13 +205,14 @@ def assert_plugin_memory_growth(pid: int, call: Callable[[bytes], bytes]) -> Non
 
 
 def print_table(results: list[Result]) -> None:
-    print("| Benchmark | Payload | Calls | ns/op | MB/s | Peak heap/op | Retained heap/op |")
-    print("| --- | ---: | ---: | ---: | ---: | ---: | ---: |")
+    print("| Benchmark | Payload | Calls | ns/op | MB/s | Peak heap | Retained heap | Peak heap/op | Retained heap/op |")
+    print("| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |")
     for result in results:
         mbps = result.bytes_per_sec / (1024 * 1024)
         print(
             f"| {result.benchmark} | {result.payload_bytes} | {result.iterations} | {result.ns_per_op} | {mbps:.2f} | "
-            f"{result.heap_peak_bytes_per_op} B/op | {result.heap_retained_bytes_per_op} B/op |"
+            f"{result.heap_peak_bytes} B | {result.heap_retained_bytes} B | "
+            f"{result.heap_peak_bytes_per_op:.2f} B/op | {result.heap_retained_bytes_per_op:.2f} B/op |"
         )
 
 
