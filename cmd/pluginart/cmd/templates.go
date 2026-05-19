@@ -2,7 +2,7 @@ package cmd
 
 const schemaTmpl = `// {{.Name}}.fbs
 // Edit this file to define your plugin's methods.
-// Run: pluginart gen bindings --target host --schema ./schema/{{.Name}}.fbs
+// Run: pluginart gen bindings --target host --lang go --schema ./schema/{{.Name}}.fbs
 //      pluginart gen plugin --lang go --name {{.Name}} --schema ./schema/{{.Name}}.fbs
 
 namespace {{.Name}};

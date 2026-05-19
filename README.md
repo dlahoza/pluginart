@@ -102,11 +102,18 @@ Each host example calls the binary `echo` plugins and the Dockerized `repeat` pl
 - [Wire protocol](docs/protocol.md)
 - [Releasing](docs/releasing.md)
 
-## Status
+## Roadmap
 
-`v0.2.0` provides Go, Python, and TypeScript host/plugin runtimes, binary/remote/docker modes, Unix/TCP transports, FlatBuffers handshake, contract-hash verification, Ping/Pong health checks, restart backoff, schema initialization, validation, and client/plugin generation.
+| Version | Status | Scope |
+| --- | --- | --- |
+| `v0.1` | Shipped | Go runtime foundation: FlatBuffers call envelope, framing, handshake, contract-hash verification, Unix/TCP transports, binary and remote plugin lifecycle, Go schema/client/plugin generation, and getting-started docs. |
+| `v0.2` | Shipped | Python and TypeScript runtimes, Python/TypeScript host and plugin generation, Docker plugin mode, config validation, full protocol docs, reusable plugin server helpers, and example hosts/plugins across Go, Python, and TypeScript. |
+| `v0.3` | Planned | Resilience: circuit breakers, per-call deadlines and cancellation, and batching. |
+| `v0.4` | Planned | Observability: W3C trace context propagation and OpenTelemetry integration. |
+| `v0.5` | Planned | Transport hardening: compression negotiation with LZ4/ZSTD and TLS support for remote mode, including mutual TLS options. |
+| `v0.6` | Planned | Performance: shared-memory fast path, runtime object pooling, and sender write coalescing. |
 
-Per-call cancellation, observability, compression, TLS for remote mode, and shared-memory fast paths are deferred.
+The current release is `v0.2.0`. Field-level request/response builders, plugin registry/marketplace support, and languages beyond Go, Python, and TypeScript are not currently in scope.
 
 ## License
 
