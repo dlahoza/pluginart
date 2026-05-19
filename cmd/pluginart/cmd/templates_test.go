@@ -166,6 +166,27 @@ func TestRenderSkeletonFileOverwritesWithFlag(t *testing.T) {
 	}
 }
 
+func TestGoPluginGoModUsesCurrentRuntimeVersion(t *testing.T) {
+	if !strings.Contains(pluginGomodTmpl, "github.com/dlahoza/pluginart v0.2.0") {
+		t.Fatalf("Go plugin go.mod template should use pluginart v0.2.0:\n%s", pluginGomodTmpl)
+	}
+}
+
+func TestTypeScriptPluginDockerfileAvoidsCopyingWholeContext(t *testing.T) {
+	for _, want := range []string{
+		"COPY tsconfig.json ./",
+		"COPY *.ts ./",
+		"COPY plugin ./plugin",
+	} {
+		if !strings.Contains(tsDockerfileTmpl, want) {
+			t.Fatalf("TypeScript Dockerfile template missing %q:\n%s", want, tsDockerfileTmpl)
+		}
+	}
+	if strings.Contains(tsDockerfileTmpl, "COPY . .") {
+		t.Fatalf("TypeScript Dockerfile template should not copy the whole context:\n%s", tsDockerfileTmpl)
+	}
+}
+
 func TestPythonEnvelopeHelpersTemplate(t *testing.T) {
 	data := clientTemplateData{
 		Namespace: "echo",

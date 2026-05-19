@@ -311,7 +311,7 @@ const pluginGomodTmpl = `module {{.Name}}-plugin
 go 1.23
 
 require (
-	github.com/dlahoza/pluginart v0.1.0
+	github.com/dlahoza/pluginart v0.2.0
 	github.com/google/flatbuffers v25.12.19+incompatible
 )
 `
