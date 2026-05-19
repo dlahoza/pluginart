@@ -39,10 +39,12 @@ pluginart init schema --name transform
 # 2. Generate the host-side typed client
 pluginart gen client --lang go --schema ./schema/transform.fbs
 # → ./gen/go/transform/
+# Also supported: --lang python, --lang typescript
 
 # 3. Generate the plugin skeleton
 pluginart gen plugin --lang go --name transform --schema ./schema/transform.fbs
 # → ./transform-plugin/
+# Also supported: --lang python, --lang typescript
 
 # 4. Implement the plugin
 # Edit ./transform-plugin/plugin.go — fill in Handle()
@@ -55,9 +57,10 @@ cat > pluginart.toml << 'EOF'
 version = 1
 
 [[plugins]]
-name = "transform"
-type = "binary"
-path = "./transform-plugin/transform-plugin"
+name         = "transform"
+type         = "binary"
+path         = "./transform-plugin/transform-plugin"
+contract_hash = "sha256:<hash from pluginart validate --schema ./schema/transform.fbs>"
 EOF
 
 # 7. Use it in Go
@@ -77,7 +80,7 @@ client := transform.NewClient(manager, "transform")
 resp, err := client.Example(ctx, &transform.ExampleRequest{Input: "hello"})
 ```
 
-For the full walkthrough see [docs/getting-started.md](docs/getting-started.md). For a runnable end-to-end example without the schema toolchain, see [examples/](examples/).
+For runnable end-to-end examples (Go host + Go plugin, Go host + Python plugin, TypeScript host), see [examples/](examples/).
 
 ## Plugin modes
 
@@ -104,21 +107,24 @@ restart_backoff_max = "30s"
 max_message_bytes  = 4194304
 
 [[plugins]]
-name = "transform"
-type = "binary"
-path = "./plugins/transform"
-env  = { LOG_LEVEL = "info" }
+name          = "transform"
+type          = "binary"
+path          = "./plugins/transform"
+contract_hash = "sha256:<hex>"
+env           = { LOG_LEVEL = "info" }
 
 [[plugins]]
-name  = "filter"
-type  = "docker"
-image = "ghcr.io/myorg/filter-plugin:v1.2.0"
-env   = { LOG_LEVEL = "debug" }
+name          = "filter"
+type          = "docker"
+image         = "ghcr.io/myorg/filter-plugin:v1.2.0"
+contract_hash = "sha256:<hex>"
+env           = { LOG_LEVEL = "debug" }
 
 [[plugins]]
-name    = "scorer"
-type    = "remote"
-address = "scorer.internal:9090"
+name          = "scorer"
+type          = "remote"
+address       = "scorer.internal:9090"
+contract_hash = "sha256:<hex>"
 ```
 
 Plugin configuration is env vars only. The `env` table is injected verbatim into the plugin process environment — no special serialisation.
@@ -131,7 +137,7 @@ Handshake messages use FlatBuffers (defined in `pluginart.schema.fbs`, pre-compi
 
 ## Status
 
-**v0.1** — current release.
+**v0.2** — current release.
 
 | Feature                                    | Status  |
 |--------------------------------------------|---------|
@@ -140,11 +146,12 @@ Handshake messages use FlatBuffers (defined in `pluginart.schema.fbs`, pre-compi
 | FlatBuffers handshake + contract hash      | ✓       |
 | Ping/Pong health checks + restart backoff  | ✓       |
 | `pluginart init schema`                    | ✓       |
-| `pluginart gen client --lang go`           | ✓       |
-| `pluginart gen plugin --lang go`           | ✓       |
-| Docker plugin mode                         | v0.2    |
-| Python and TypeScript codegen              | v0.2    |
-| `pluginart validate`                       | v0.2    |
+| `pluginart gen client/plugin --lang go`    | ✓       |
+| Docker plugin mode                         | ✓       |
+| `pluginart gen client/plugin --lang python`     | ✓  |
+| `pluginart gen client/plugin --lang typescript` | ✓  |
+| `pluginart validate`                       | ✓       |
+| Protocol docs (`docs/protocol.md`)         | ✓       |
 | Per-call deadline and cancellation         | v0.3    |
 | Compression (LZ4 / ZSTD)                  | v0.5    |
 | TLS for remote mode                        | v0.5    |
