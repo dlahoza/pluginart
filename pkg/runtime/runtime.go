@@ -26,15 +26,16 @@ type DefaultsConfig struct {
 
 // PluginConfig holds configuration for a single plugin entry.
 type PluginConfig struct {
-	Name      string            `toml:"name"`
-	Type      string            `toml:"type"`       // binary | docker | remote
-	Path      string            `toml:"path"`       // binary
-	Args      []string          `toml:"args"`       // binary
-	Image     string            `toml:"image"`      // docker
-	Address   string            `toml:"address"`    // remote
-	Transport string            `toml:"transport"`  // unix | tcp
-	Env       map[string]string `toml:"env"`
-	Resources ResourcesConfig   `toml:"resources"`  // docker
+	Name         string            `toml:"name"`
+	Type         string            `toml:"type"`          // binary | docker | remote
+	Path         string            `toml:"path"`          // binary
+	Args         []string          `toml:"args"`          // binary
+	Image        string            `toml:"image"`         // docker
+	Address      string            `toml:"address"`       // remote
+	Transport    string            `toml:"transport"`     // unix | tcp
+	ContractHash string            `toml:"contract_hash"` // sha256:<hex> from schema
+	Env          map[string]string `toml:"env"`
+	Resources    ResourcesConfig   `toml:"resources"`     // docker
 
 	// Per-plugin overrides (zero value = use default)
 	StartupTimeout    duration `toml:"startup_timeout"`

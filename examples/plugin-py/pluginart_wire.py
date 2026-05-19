@@ -22,7 +22,7 @@ _MSG_CANCEL             = 0x06
 _MSG_PING               = 0x07
 _MSG_PONG               = 0x08
 
-CONTRACT_HASH = ""  # empty: matches Go host which also sends ""
+CONTRACT_HASH = "sha256:094f99745014e0e307ad2b73394a45887059d3ce7fcda59fbd741f77e7904a14"
 
 
 def _recv_frame(sock: socket.socket) -> tuple[int, bytes]:

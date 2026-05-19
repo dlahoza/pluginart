@@ -12,9 +12,11 @@ max_message_bytes   = 1048576
 name = "echo"
 type = "binary"
 path = "../plugin-go/plugin-go"
+contract_hash = "sha256:094f99745014e0e307ad2b73394a45887059d3ce7fcda59fbd741f77e7904a14"
 
 [[plugins]]
 name = "echo-py"
 type = "binary"
 path = "python3"
 args = ["../plugin-py/plugin.py"]
+contract_hash = "sha256:094f99745014e0e307ad2b73394a45887059d3ce7fcda59fbd741f77e7904a14"

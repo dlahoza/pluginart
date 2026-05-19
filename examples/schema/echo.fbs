@@ -1,0 +1,29 @@
+// Echo plugin schema: uppercases a string input.
+namespace echo;
+
+table EchoRequest  { input:  string; }
+table EchoResponse { output: string; }
+
+union RequestPayload  { EchoRequest }
+union ResponsePayload { EchoResponse }
+
+table CallRequest {
+  request_id:       uint64;
+  deadline_unix_ms: int64;
+  trace_id:         string;
+  span_id:          string;
+  payload:          RequestPayload;
+}
+
+table CallResponse {
+  request_id: uint64;
+  payload:    ResponsePayload;
+}
+
+table PluginError {
+  code:    uint16;
+  message: string (required);
+  retry:   bool;
+}
+
+root_type CallRequest;

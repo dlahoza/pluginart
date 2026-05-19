@@ -87,7 +87,7 @@ func (p *plugin) connect(ctx context.Context, dialer transport.Dialer) error {
 	if err != nil {
 		return fmt.Errorf("dial %s: %w", dialer.Addr(), err)
 	}
-	client, err := protocol.Connect(conn, p.cfg.Name, "")
+	client, err := protocol.Connect(conn, p.cfg.Name, p.cfg.ContractHash)
 	if err != nil {
 		_ = conn.Close()
 		return fmt.Errorf("handshake with %q: %w", p.cfg.Name, err)
