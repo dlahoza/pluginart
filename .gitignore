@@ -1,8 +1,41 @@
 # Build outputs
 /pluginart
 *.exe
+bin/
+dist/
+build/
+coverage/
+*.test
+*.out
+*.prof
+*.tgz
 
-# Examples — compiled binaries
+# Go
+.gocache/
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.tox/
+.nox/
+.venv/
+venv/
+env/
+*.egg-info/
+.coverage
+htmlcov/
+
+# Node / TypeScript
+node_modules/
+.npm-cache/
+.turbo/
+.next/
+
+# Examples - compiled binaries
 /examples/plugin-go/plugin-go
 /examples/host-go/host-go
 
