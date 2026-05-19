@@ -12,16 +12,6 @@ type CallContext struct {
 	RequestID uint64
 }
 
-// BuildEchoCallRequest wraps a EchoRequest table offset in a CallRequest envelope.
-func BuildEchoCallRequest(builder *flatbuffers.Builder, payload flatbuffers.UOffsetT) []byte {
-	CallRequestStart(builder)
-	CallRequestAddPayloadType(builder, RequestPayloadEchoRequest)
-	CallRequestAddPayload(builder, payload)
-	req := CallRequestEnd(builder)
-	builder.Finish(req)
-	return builder.FinishedBytes()
-}
-
 // DecodeEchoRequest unwraps a CallRequest envelope and returns the EchoRequest payload.
 func DecodeEchoRequest(payload []byte) (*EchoRequest, CallContext, error) {
 	req := GetRootAsCallRequest(payload, 0)
@@ -46,19 +36,4 @@ func BuildEchoCallResponse(call CallContext, builder *flatbuffers.Builder, paylo
 	resp := CallResponseEnd(builder)
 	builder.Finish(resp)
 	return builder.FinishedBytes()
-}
-
-// DecodeEchoResponse unwraps a CallResponse envelope and returns the EchoResponse payload.
-func DecodeEchoResponse(payload []byte) (*EchoResponse, CallContext, error) {
-	resp := GetRootAsCallResponse(payload, 0)
-	if got := resp.PayloadType(); got != ResponsePayloadEchoResponse {
-		return nil, CallContext{}, fmt.Errorf("expected EchoResponse payload, got %s", got.String())
-	}
-	var tab flatbuffers.Table
-	if !resp.Payload(&tab) {
-		return nil, CallContext{}, fmt.Errorf("missing EchoResponse payload")
-	}
-	out := &EchoResponse{}
-	out.Init(tab.Bytes, tab.Pos)
-	return out, CallContext{RequestID: resp.RequestId()}, nil
 }

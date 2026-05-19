@@ -66,6 +66,64 @@ jobs:
           node-version: '22'
       - run: cd runtimes/typescript && npm install && npm run build && npm pack --dry-run
 
+  examples-generation:
+    name: "Examples: regenerate and integrate"
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install flatc
+        run: sudo apt-get update && sudo apt-get install -y flatbuffers-compiler
+      - name: Delete generated example code
+        run: |
+          rm -rf examples/host-go/plugins
+          rm -rf examples/host-py/plugins
+          rm -rf examples/host-ts/plugins
+          rm -rf examples/host-ts/dist
+          rm -rf examples/plugin-go/plugin
+          rm -rf examples/plugin-py/plugin
+      - name: Regenerate example code
+        run: |
+          go run ./cmd/pluginart gen bindings --target host --lang go --schema examples/schema/echo.fbs --out examples/host-go/plugins
+          go run ./cmd/pluginart gen bindings --target host --lang python --schema examples/schema/echo.fbs --out examples/host-py/plugins/echo
+          go run ./cmd/pluginart gen bindings --target host --lang typescript --schema examples/schema/echo.fbs --out examples/host-ts/plugins/echo
+          go run ./cmd/pluginart gen bindings --target plugin --lang go --schema examples/schema/echo.fbs --out examples/plugin-go/plugin
+          go run ./cmd/pluginart gen plugin --lang python --name echo --schema examples/schema/echo.fbs --out examples/plugin-py
+      - name: Install Python deps
+        run: pip install -e runtimes/python -r examples/plugin-py/requirements.txt
+      - name: Build plugin-go
+        run: cd examples/plugin-go && go build -o plugin-go .
+      - name: Build local TypeScript runtime package
+        run: cd runtimes/typescript && npm install && npm run build
+      - name: Build host-ts
+        run: cd examples/host-ts && npm install && npm run build
+      - name: Run host-go
+        run: |
+          output=$(cd examples/host-go && go run . 2>/dev/null)
+          echo "$output"
+          echo "$output" | grep -qF 'echo (go):     HELLO FROM HOST'
+          echo "$output" | grep -qF 'echo (python): HELLO FROM HOST'
+      - name: Run host-py
+        run: |
+          output=$(python examples/host-py/main.py 2>/dev/null)
+          echo "$output"
+          echo "$output" | grep -qF 'echo (go):     HELLO FROM PYTHON HOST'
+          echo "$output" | grep -qF 'echo (python): HELLO FROM PYTHON HOST'
+      - name: Run host-ts
+        run: |
+          output=$(cd examples/host-ts && node dist/main.js 2>/dev/null)
+          echo "$output"
+          echo "$output" | grep -qF 'echo (go):     HELLO FROM TS HOST'
+          echo "$output" | grep -qF 'echo (python): HELLO FROM TS HOST'
+
   integration-host-go:
     name: "Integration: host-go → plugin-go + plugin-py"
     runs-on: ubuntu-latest
@@ -78,7 +136,7 @@ jobs:
         with:
           python-version: '3.12'
       - name: Install Python deps
-        run: pip install -e runtimes/python -r examples/plugin-py/plugin/requirements.txt
+        run: pip install -e runtimes/python -r examples/plugin-py/requirements.txt
       - name: Build plugin-go
         run: cd examples/plugin-go && go build -o plugin-go .
       - name: Run host-go
@@ -103,7 +161,7 @@ jobs:
         with:
           node-version: '22'
       - name: Install Python deps
-        run: pip install -e runtimes/python -r examples/plugin-py/plugin/requirements.txt
+        run: pip install -e runtimes/python -r examples/plugin-py/requirements.txt
       - name: Build plugin-go
         run: cd examples/plugin-go && go build -o plugin-go .
       - name: Build local TypeScript runtime package
@@ -128,7 +186,7 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
-      - run: pip install -e runtimes/python flatbuffers
+      - run: pip install -e runtimes/python -r examples/plugin-py/requirements.txt
       - run: cd examples/plugin-go && go build -o plugin-go .
       - run: |
           output=$(python examples/host-py/main.py 2>/dev/null)

@@ -14,29 +14,38 @@ import (
 
 var genCmd = &cobra.Command{
 	Use:   "gen",
-	Short: "Generate client or plugin code from a schema",
+	Short: "Generate bindings or plugin code from a schema",
+	RunE: func(cmd *cobra.Command, args []string) error {
+		if len(args) > 0 {
+			return fmt.Errorf("unknown command %q for %q", args[0], cmd.CommandPath())
+		}
+		return cmd.Help()
+	},
 }
 
-// ── gen client ───────────────────────────────────────────────────────────────
+// ── gen bindings ─────────────────────────────────────────────────────────────
 
-var genClientCmd = &cobra.Command{
-	Use:   "client",
-	Short: "Generate host-side client bindings",
-	RunE:  runGenClient,
+var genBindingsCmd = &cobra.Command{
+	Use:   "bindings",
+	Short: "Generate host or plugin bindings from a schema",
+	RunE:  runGenBindings,
 }
 
 var (
-	genClientFlagLang   string
-	genClientFlagSchema string
-	genClientFlagOut    string
+	genBindingsFlagLang   string
+	genBindingsFlagTarget string
+	genBindingsFlagSchema string
+	genBindingsFlagOut    string
 )
 
 func init() {
-	genClientCmd.Flags().StringVar(&genClientFlagLang, "lang", "", "target language (go, python, typescript)")
-	genClientCmd.Flags().StringVar(&genClientFlagSchema, "schema", "./schema/*.fbs", "path to .fbs schema file")
-	genClientCmd.Flags().StringVar(&genClientFlagOut, "out", "./gen/go", "output directory")
-	_ = genClientCmd.MarkFlagRequired("lang")
-	genCmd.AddCommand(genClientCmd)
+	genBindingsCmd.Flags().StringVar(&genBindingsFlagLang, "lang", "", "target language (go, python, typescript)")
+	genBindingsCmd.Flags().StringVar(&genBindingsFlagTarget, "target", "", "binding target (host, plugin)")
+	genBindingsCmd.Flags().StringVar(&genBindingsFlagSchema, "schema", "./schema/*.fbs", "path to .fbs schema file")
+	genBindingsCmd.Flags().StringVar(&genBindingsFlagOut, "out", "./gen/go", "output directory")
+	_ = genBindingsCmd.MarkFlagRequired("lang")
+	_ = genBindingsCmd.MarkFlagRequired("target")
+	genCmd.AddCommand(genBindingsCmd)
 }
 
 type clientTemplateData struct {
@@ -45,8 +54,8 @@ type clientTemplateData struct {
 	ContractHash string
 }
 
-func runGenClient(_ *cobra.Command, _ []string) error {
-	schemaPath, err := resolveSchema(genClientFlagSchema)
+func runGenBindings(_ *cobra.Command, _ []string) error {
+	schemaPath, err := resolveSchema(genBindingsFlagSchema)
 	if err != nil {
 		return err
 	}
@@ -65,25 +74,31 @@ func runGenClient(_ *cobra.Command, _ []string) error {
 		return fmt.Errorf("parse schema: %w", err)
 	}
 
-	switch genClientFlagLang {
-	case "go":
-		return runGenClientGo(schemaPath, parsed, contractHash)
-	case "python":
-		return runGenClientPython(schemaPath, parsed, contractHash)
-	case "typescript":
-		return runGenClientTypeScript(schemaPath, parsed, contractHash)
+	switch genBindingsFlagTarget {
+	case "host", "plugin":
 	default:
-		return fmt.Errorf("unsupported language %q (supported: go, python, typescript)", genClientFlagLang)
+		return fmt.Errorf("unsupported target %q (supported: host, plugin)", genBindingsFlagTarget)
+	}
+
+	switch genBindingsFlagLang {
+	case "go":
+		return runGenBindingsGo(schemaPath, parsed, contractHash, genBindingsFlagOut, genBindingsFlagTarget)
+	case "python":
+		return runGenBindingsPython(schemaPath, parsed, contractHash, genBindingsFlagOut, genBindingsFlagTarget)
+	case "typescript":
+		return runGenBindingsTypeScript(schemaPath, parsed, contractHash, genBindingsFlagOut, genBindingsFlagTarget)
+	default:
+		return fmt.Errorf("unsupported language %q (supported: go, python, typescript)", genBindingsFlagLang)
 	}
 }
 
-func runGenClientGo(schemaPath string, parsed *schema.Schema, contractHash string) error {
-	outDir := filepath.Join(genClientFlagOut, parsed.Namespace)
+func runGenBindingsGo(schemaPath string, parsed *schema.Schema, contractHash, rootOut, target string) error {
+	outDir := filepath.Join(rootOut, parsed.Namespace)
 	if err := os.MkdirAll(outDir, 0o755); err != nil {
 		return fmt.Errorf("create output dir: %w", err)
 	}
 
-	if err := runFlatc(schemaPath, genClientFlagOut); err != nil {
+	if err := runFlatc(schemaPath, rootOut); err != nil {
 		return fmt.Errorf("flatc: %w", err)
 	}
 
@@ -93,11 +108,17 @@ func runGenClientGo(schemaPath string, parsed *schema.Schema, contractHash strin
 		ContractHash: contractHash,
 	}
 
-	if err := renderToFile(clientTmpl, data, filepath.Join(outDir, parsed.Namespace+"_client.go")); err != nil {
-		return err
-	}
-	if err := renderToFile(goEnvelopeHelpersTmpl, data, filepath.Join(outDir, "pluginart_helpers.go")); err != nil {
-		return err
+	if target == "host" {
+		if err := renderToFile(clientTmpl, data, filepath.Join(outDir, parsed.Namespace+"_client.go")); err != nil {
+			return err
+		}
+		if err := renderToFile(goEnvelopeHelpersTmpl, data, filepath.Join(outDir, "pluginart_helpers.go")); err != nil {
+			return err
+		}
+	} else {
+		if err := renderToFile(goPluginBindingsHelpersTmpl, data, filepath.Join(outDir, "pluginart_helpers.go")); err != nil {
+			return err
+		}
 	}
 
 	contractData := struct{ Package, Hash string }{Package: parsed.Namespace, Hash: contractHash}
@@ -105,7 +126,7 @@ func runGenClientGo(schemaPath string, parsed *schema.Schema, contractHash strin
 		return err
 	}
 
-	fmt.Printf("✓ Client written to %s/\n", outDir)
+	fmt.Printf("✓ %s Go bindings written to %s/\n", target, outDir)
 	return nil
 }
 
@@ -118,10 +139,11 @@ var genPluginCmd = &cobra.Command{
 }
 
 var (
-	genPluginFlagLang   string
-	genPluginFlagName   string
-	genPluginFlagSchema string
-	genPluginFlagOut    string
+	genPluginFlagLang              string
+	genPluginFlagName              string
+	genPluginFlagSchema            string
+	genPluginFlagOut               string
+	genPluginFlagOverwriteSkeleton bool
 )
 
 func init() {
@@ -129,6 +151,7 @@ func init() {
 	genPluginCmd.Flags().StringVar(&genPluginFlagName, "name", "", "plugin name")
 	genPluginCmd.Flags().StringVar(&genPluginFlagSchema, "schema", "./schema/*.fbs", "path to .fbs schema file")
 	genPluginCmd.Flags().StringVar(&genPluginFlagOut, "out", "", "output directory (default ./<name>-plugin)")
+	genPluginCmd.Flags().BoolVar(&genPluginFlagOverwriteSkeleton, "overwrite-skeleton", false, "overwrite editable skeleton files if they already exist")
 	_ = genPluginCmd.MarkFlagRequired("lang")
 	_ = genPluginCmd.MarkFlagRequired("name")
 	genCmd.AddCommand(genPluginCmd)
@@ -182,9 +205,8 @@ func runGenPluginGo(schemaPath string, parsed *schema.Schema, contractHash strin
 		return fmt.Errorf("create output dir: %w", err)
 	}
 
-	fbOut := filepath.Join(outDir, "flatbuffers.go")
-	if err := consolidateFlatbuffers(schemaPath, parsed.Namespace, fbOut); err != nil {
-		return fmt.Errorf("generate flatbuffers: %w", err)
+	if err := runGenBindingsGo(schemaPath, parsed, contractHash, filepath.Join(outDir, "plugin"), "plugin"); err != nil {
+		return err
 	}
 
 	data := pluginTemplateData{
@@ -199,20 +221,14 @@ func runGenPluginGo(schemaPath string, parsed *schema.Schema, contractHash strin
 		name string
 	}{
 		{pluginMainTmpl, "main.go"},
-		{goPluginEnvelopeHelpersTmpl, "pluginart_helpers.go"},
 		{pluginHandlerTmpl, "plugin.go"},
 		{pluginGomodTmpl, "go.mod"},
 		{pluginDockerfileTmpl, "Dockerfile"},
 	}
 	for _, f := range files {
-		if err := renderToFile(f.tmpl, data, filepath.Join(outDir, f.name)); err != nil {
+		if err := renderSkeletonFile(f.tmpl, data, filepath.Join(outDir, f.name)); err != nil {
 			return err
 		}
-	}
-
-	contractData := struct{ Package, Hash string }{Package: "main", Hash: contractHash}
-	if err := renderToFile(contractTmpl, contractData, filepath.Join(outDir, "contract.go")); err != nil {
-		return err
 	}
 
 	fmt.Printf("✓ Plugin skeleton written to %s/\n", outDir)
@@ -249,85 +265,6 @@ func runFlatc(schemaPath, outDir string) error {
 	return cmd.Run()
 }
 
-func consolidateFlatbuffers(schemaPath, namespace, outFile string) error {
-	tmpDir, err := os.MkdirTemp("", "pluginart-flatc-*")
-	if err != nil {
-		return err
-	}
-	defer func() { _ = os.RemoveAll(tmpDir) }()
-
-	if err := runFlatc(schemaPath, tmpDir); err != nil {
-		return err
-	}
-
-	genDir := filepath.Join(tmpDir, namespace)
-	entries, err := os.ReadDir(genDir)
-	if err != nil {
-		return err
-	}
-
-	var buf strings.Builder
-	buf.WriteString("// Code generated by flatc via pluginart. DO NOT EDIT.\npackage main\n\n")
-	buf.WriteString("import flatbuffers \"github.com/google/flatbuffers/go\"\n\n")
-
-	first := true
-	for _, e := range entries {
-		if !strings.HasSuffix(e.Name(), ".go") {
-			continue
-		}
-		data, err := os.ReadFile(filepath.Join(genDir, e.Name()))
-		if err != nil {
-			return err
-		}
-		content := stripGoHeader(string(data))
-		if !first {
-			buf.WriteString("\n")
-		}
-		buf.WriteString(content)
-		first = false
-	}
-
-	return os.WriteFile(outFile, []byte(buf.String()), 0o644)
-}
-
-// stripGoHeader removes the leading generated comment block, package declaration,
-// and import block from a Go source string, returning just the declarations.
-func stripGoHeader(src string) string {
-	lines := strings.Split(src, "\n")
-	i := 0
-	// skip leading comment lines (// ...)
-	for i < len(lines) && (strings.HasPrefix(strings.TrimSpace(lines[i]), "//") || strings.TrimSpace(lines[i]) == "") {
-		i++
-	}
-	// skip package line
-	if i < len(lines) && strings.HasPrefix(strings.TrimSpace(lines[i]), "package ") {
-		i++
-	}
-	// skip blank lines after package
-	for i < len(lines) && strings.TrimSpace(lines[i]) == "" {
-		i++
-	}
-	// skip import block
-	if i < len(lines) && strings.HasPrefix(strings.TrimSpace(lines[i]), "import") {
-		line := strings.TrimSpace(lines[i])
-		if strings.Contains(line, "(") {
-			// multi-line import
-			i++
-			for i < len(lines) && !strings.Contains(lines[i], ")") {
-				i++
-			}
-			i++ // consume closing )
-		} else {
-			i++ // single-line import
-		}
-	}
-	// skip blank lines after imports
-	for i < len(lines) && strings.TrimSpace(lines[i]) == "" {
-		i++
-	}
-	return strings.Join(lines[i:], "\n")
-}
-
 func renderToFile(tmplStr string, data any, path string) error {
 	tmpl, err := template.New("").Parse(tmplStr)
 	if err != nil {
@@ -342,4 +279,15 @@ func renderToFile(tmplStr string, data any, path string) error {
 		return fmt.Errorf("render %s: %w", filepath.Base(path), err)
 	}
 	return nil
+}
+
+func renderSkeletonFile(tmplStr string, data any, path string) error {
+	if !genPluginFlagOverwriteSkeleton {
+		if _, err := os.Stat(path); err == nil {
+			return nil
+		} else if !os.IsNotExist(err) {
+			return err
+		}
+	}
+	return renderToFile(tmplStr, data, path)
 }

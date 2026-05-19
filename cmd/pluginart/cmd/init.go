@@ -54,7 +54,7 @@ func runInitSchema(_ *cobra.Command, _ []string) error {
 
 	readmePath := filepath.Join(initFlagOut, "README.md")
 	readmeContent := fmt.Sprintf("Edit `%s.fbs` to define your plugin methods, then run:\n\n"+
-		"    pluginart gen client --lang go --schema ./%s/%s.fbs\n"+
+		"    pluginart gen bindings --target host --lang go --schema ./%s/%s.fbs\n"+
 		"    pluginart gen plugin --lang go --name %s --schema ./%s/%s.fbs\n",
 		initFlagName, initFlagOut, initFlagName, initFlagName, initFlagOut, initFlagName)
 	if err := os.WriteFile(readmePath, []byte(readmeContent), 0o644); err != nil {

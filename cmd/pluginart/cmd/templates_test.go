@@ -1,6 +1,8 @@
 package cmd
 
 import (
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 	"text/template"
@@ -64,6 +66,103 @@ func TestGoPluginEnvelopeHelpersTemplate(t *testing.T) {
 		if !strings.Contains(out.String(), want) {
 			t.Fatalf("rendered plugin helpers missing %q:\n%s", want, out.String())
 		}
+	}
+}
+
+func TestGoPluginBindingsHelpersTemplate(t *testing.T) {
+	data := clientTemplateData{
+		Namespace: "echo",
+		Methods: []schema.Method{{
+			Name:          "Echo",
+			RequestTable:  "EchoRequest",
+			ResponseTable: "EchoResponse",
+		}},
+	}
+
+	var out strings.Builder
+	tmpl := template.Must(template.New("plugin_bindings_helpers").Parse(goPluginBindingsHelpersTmpl))
+	if err := tmpl.Execute(&out, data); err != nil {
+		t.Fatal(err)
+	}
+
+	for _, want := range []string{
+		"package echo",
+		"func DecodeEchoRequest",
+		"RequestPayloadEchoRequest",
+		"func BuildEchoCallResponse",
+		"ResponsePayloadEchoResponse",
+	} {
+		if !strings.Contains(out.String(), want) {
+			t.Fatalf("rendered plugin binding helpers missing %q:\n%s", want, out.String())
+		}
+	}
+	for _, notWant := range []string{
+		"func BuildEchoCallRequest",
+		"func DecodeEchoResponse",
+	} {
+		if strings.Contains(out.String(), notWant) {
+			t.Fatalf("rendered plugin binding helpers unexpectedly contain %q:\n%s", notWant, out.String())
+		}
+	}
+}
+
+func TestGenCommandUsesBindingsNotClient(t *testing.T) {
+	var hasBindings, hasClient bool
+	for _, command := range genCmd.Commands() {
+		switch command.Name() {
+		case "bindings":
+			hasBindings = true
+		case "client":
+			hasClient = true
+		}
+	}
+	if !hasBindings {
+		t.Fatal("gen command missing bindings subcommand")
+	}
+	if hasClient {
+		t.Fatal("gen command should not register client subcommand")
+	}
+}
+
+func TestRenderSkeletonFileDoesNotOverwriteByDefault(t *testing.T) {
+	oldOverwrite := genPluginFlagOverwriteSkeleton
+	genPluginFlagOverwriteSkeleton = false
+	t.Cleanup(func() { genPluginFlagOverwriteSkeleton = oldOverwrite })
+
+	path := filepath.Join(t.TempDir(), "handler.py")
+	if err := os.WriteFile(path, []byte("custom"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := renderSkeletonFile("generated", nil, path); err != nil {
+		t.Fatal(err)
+	}
+	got, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(got) != "custom" {
+		t.Fatalf("skeleton file was overwritten: %q", got)
+	}
+}
+
+func TestRenderSkeletonFileOverwritesWithFlag(t *testing.T) {
+	oldOverwrite := genPluginFlagOverwriteSkeleton
+	genPluginFlagOverwriteSkeleton = true
+	t.Cleanup(func() { genPluginFlagOverwriteSkeleton = oldOverwrite })
+
+	path := filepath.Join(t.TempDir(), "handler.py")
+	if err := os.WriteFile(path, []byte("custom"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := renderSkeletonFile("generated", nil, path); err != nil {
+		t.Fatal(err)
+	}
+	got, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(got) != "generated" {
+		t.Fatalf("skeleton file was not overwritten: %q", got)
 	}
 }
 

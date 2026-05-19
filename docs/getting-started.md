@@ -26,19 +26,19 @@ The schema defines `CallRequest`, `CallResponse`, request/response tables, and `
 Go:
 
 ```bash
-pluginart gen client --lang go --schema schema/echo.fbs --out gen/go/echo
+pluginart gen bindings --target host --lang go --schema schema/echo.fbs --out gen/go
 ```
 
 Python:
 
 ```bash
-pluginart gen client --lang python --schema schema/echo.fbs --out gen/python
+pluginart gen bindings --target host --lang python --schema schema/echo.fbs --out gen/python
 ```
 
 TypeScript:
 
 ```bash
-pluginart gen client --lang typescript --schema schema/echo.fbs --out gen/typescript
+pluginart gen bindings --target host --lang typescript --schema schema/echo.fbs --out gen/typescript
 ```
 
 Go, Python, and TypeScript clients include method wrappers plus generated helpers that wrap and unwrap the pluginart `CallRequest` / `CallResponse` envelope. Application code still builds the method payload table with FlatBuffers, then passes the builder and payload offset to the generated client.
@@ -51,7 +51,7 @@ pluginart gen plugin --lang python --name echo --schema schema/echo.fbs --out ec
 pluginart gen plugin --lang typescript --name echo --schema schema/echo.fbs --out echo-plugin-ts
 ```
 
-Generated Python and TypeScript plugin entrypoints import `serve` from the runtime package. Handler files stay focused on decoding `CallRequest` and encoding `CallResponse`.
+Generated plugin plumbing lives under `plugin/`. Editable skeleton files live in the plugin root and are not overwritten on later runs unless `--overwrite-skeleton` is passed.
 
 ## 4. Configure The Host
 

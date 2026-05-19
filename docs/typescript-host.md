@@ -3,7 +3,7 @@
 Generate a client:
 
 ```bash
-pluginart gen client --lang typescript --schema examples/schema/echo.fbs --out examples/host-ts/plugins/echo
+pluginart gen bindings --target host --lang typescript --schema examples/schema/echo.fbs --out examples/host-ts/plugins/echo
 npm install pluginart flatbuffers
 ```
 

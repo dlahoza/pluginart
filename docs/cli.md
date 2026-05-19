@@ -10,17 +10,17 @@ pluginart init schema --name echo
 
 Output includes request/response tables, payload unions, `CallRequest`, `CallResponse`, and `PluginError`.
 
-## `pluginart gen client`
+## `pluginart gen bindings`
 
-Generates host-side clients and FlatBuffers code.
+Generates host-side or plugin-side bindings and FlatBuffers code.
 
 ```bash
-pluginart gen client --lang go --schema schema/echo.fbs --out gen/go/echo
-pluginart gen client --lang python --schema schema/echo.fbs --out gen/python
-pluginart gen client --lang typescript --schema schema/echo.fbs --out gen/typescript
+pluginart gen bindings --target host --lang go --schema schema/echo.fbs --out gen/go
+pluginart gen bindings --target host --lang python --schema schema/echo.fbs --out gen/python
+pluginart gen bindings --target plugin --lang go --schema schema/echo.fbs --out echo-plugin/plugin
 ```
 
-Go output includes FlatBuffers modules, a generated client, `pluginart_helpers.go` envelope helpers, and `contract.go`. Python output includes FlatBuffers Python modules, `<namespace>_client.py`, `pluginart_helpers.py`, and `contract.py`. TypeScript output includes FlatBuffers TypeScript modules, `<namespace>_client.ts`, `pluginart_helpers.ts`, and `contract.ts`. The repository examples place generated host code under `examples/host-*/plugins/echo`.
+Host bindings include generated client wrappers. Plugin bindings include schema code, contract hash, and plugin envelope helpers, but no host client wrappers. The repository examples place generated host code under `examples/host-*/plugins/echo` and generated plugin plumbing under `examples/plugin-*/plugin`.
 
 ## `pluginart gen plugin`
 
@@ -30,7 +30,7 @@ Generates a plugin skeleton.
 pluginart gen plugin --lang python --name echo --schema schema/echo.fbs --out echo-plugin-py
 ```
 
-Python and TypeScript skeletons import runtime package server helpers. They do not emit copied wire-protocol helpers. The repository plugin examples place generated plugin code under `examples/plugin-*/plugin`.
+Skeleton files are written in the plugin project root, while generated plumbing is written under `plugin/`. Existing skeleton files are not overwritten unless `--overwrite-skeleton` is passed.
 
 ## `pluginart validate`
 
