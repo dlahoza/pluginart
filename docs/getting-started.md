@@ -1,289 +1,79 @@
-# Getting started with pluginart
+# Getting Started
 
-This guide walks through the full workflow: define a plugin API, generate code, implement the plugin, and run it - in under ten minutes.
+This workflow starts from one `.fbs` schema and ends with a host that can call plugins in Go, Python, or TypeScript.
 
 ## Prerequisites
 
-- Go 1.23 or later
-- `flatc` - the FlatBuffers compiler
-
-Install `flatc` on macOS:
-
-```bash
-brew install flatbuffers
-```
-
-On other platforms, download a release binary from https://github.com/google/flatbuffers/releases.
-
-Verify it is on your PATH:
-
-```bash
-flatc --version
-```
-
-## 1. Install the CLI
+- `flatc` on `PATH`
+- Go 1.23 or later for the CLI and Go runtime
+- Python 3.11 or later for the Python runtime
+- Node 22 or later for the TypeScript runtime
 
 ```bash
 go install github.com/dlahoza/pluginart/cmd/pluginart@latest
 ```
 
-## 2. Define your plugin API
-
-`pluginart init schema` generates a FlatBuffers schema boilerplate. The schema is the contract between host and plugin - both sides are generated from it, and the SHA-256 hash of the file is verified at connection time.
+## 1. Create A Schema
 
 ```bash
-pluginart init schema --name transform
+pluginart init schema --name echo
 ```
 
-Output:
+The schema defines `CallRequest`, `CallResponse`, request/response tables, and `RequestPayload` / `ResponsePayload` unions. Each request union member becomes a generated client method by trimming the `Request` suffix.
 
-```
-./schema/
-├── transform.fbs
-└── README.md
-```
+## 2. Generate Host Clients
 
-Generated `transform.fbs`:
-
-```fbs
-namespace transform;
-
-table ExampleRequest {
-  input: string;
-}
-
-table ExampleResponse {
-  output: string;
-}
-
-union RequestPayload  { ExampleRequest }
-union ResponsePayload { ExampleResponse }
-
-table CallRequest {
-  request_id:       uint64;
-  deadline_unix_ms: int64;
-  trace_id:         string;
-  span_id:          string;
-  payload:          RequestPayload;
-}
-
-table CallResponse {
-  request_id: uint64;
-  payload:    ResponsePayload;
-}
-
-table ShmHandle { offset: uint64; length: uint64; }
-
-table PluginError {
-  code:    uint16;
-  message: string;
-  retry:   bool;
-}
-
-root_type CallRequest;
-```
-
-To add a method, add a table pair and register both in the unions:
-
-```fbs
-table TransformRequest {
-  text:      string;
-  uppercase: bool;
-}
-
-table TransformResponse {
-  result: string;
-}
-
-union RequestPayload  { ExampleRequest, TransformRequest }
-union ResponsePayload { ExampleResponse, TransformResponse }
-```
-
-Each entry in `RequestPayload` corresponds to one callable method. The union member name (e.g. `TransformRequest`) is stripped of the `Request` suffix to derive the method name (`Transform`).
-
-## 3. Generate the host-side client
+Go:
 
 ```bash
-pluginart gen client --lang go --schema ./schema/transform.fbs
+pluginart gen client --lang go --schema schema/echo.fbs --out gen/go/echo
 ```
 
-Output:
-
-```
-./gen/go/transform/
-├── transform_client.go      # Typed client: TransformRequest → TransformResponse
-├── flatbuffers.go           # Generated FlatBuffers accessors (from flatc)
-└── contract.go              # ContractHash constant - verified at every connection
-```
-
-The generated client wraps `runtime.PluginManager.Call` with typed request/response structs. Import it in your host application:
-
-```go
-import "yourmodule/gen/go/transform"
-
-client := transform.NewClient(manager, "transform")
-resp, err := client.Example(ctx, &transform.ExampleRequest{Input: "hello"})
-```
-
-## 4. Generate the plugin skeleton
+Python:
 
 ```bash
-pluginart gen plugin --lang go --name transform --schema ./schema/transform.fbs
+pluginart gen client --lang python --schema schema/echo.fbs --out gen/python
 ```
 
-Output:
+TypeScript:
 
-```
-./transform-plugin/
-├── main.go          # Entry point: listens, writes READY, serves calls
-├── plugin.go        # Handler implementation - edit this file
-├── flatbuffers.go   # Generated FlatBuffers code
-├── contract.go      # ContractHash - must match the host's gen/go/transform/contract.go
-├── go.mod
-└── Dockerfile
+```bash
+pluginart gen client --lang typescript --schema schema/echo.fbs --out gen/typescript
 ```
 
-`main.go` (generated, do not edit):
+Go clients include method wrappers plus generated helpers that wrap and unwrap the pluginart `CallRequest` / `CallResponse` envelope. Go application code still builds the method payload table with FlatBuffers, then passes the builder and payload offset to the generated client. Python and TypeScript clients expose method names over raw schema `CallRequest` bytes and return raw schema `CallResponse` bytes.
 
-```go
-package main
+## 3. Generate A Plugin
 
-import (
-    "fmt"
-    "net"
-    "os"
-    "github.com/dlahoza/pluginart/pkg/protocol"
-)
-
-func main() {
-    var (
-        ln  net.Listener
-        err error
-    )
-    switch {
-    case os.Getenv("PLUGIN_SOCKET") != "":
-        ln, err = net.Listen("unix", os.Getenv("PLUGIN_SOCKET"))
-    case os.Getenv("PLUGIN_ADDR") != "":
-        ln, err = net.Listen("tcp", os.Getenv("PLUGIN_ADDR"))
-    default:
-        fmt.Fprintln(os.Stderr, "PLUGIN_SOCKET or PLUGIN_ADDR must be set")
-        os.Exit(1)
-    }
-    if err != nil {
-        fmt.Fprintf(os.Stderr, "listen: %v\n", err)
-        os.Exit(1)
-    }
-
-    fmt.Println("READY")
-
-    server := protocol.NewServer(ln, &PluginHandler{}, ContractHash)
-    if err := server.Serve(); err != nil {
-        fmt.Fprintf(os.Stderr, "serve: %v\n", err)
-        os.Exit(1)
-    }
-}
+```bash
+pluginart gen plugin --lang go --name echo --schema schema/echo.fbs --out echo-plugin-go
+pluginart gen plugin --lang python --name echo --schema schema/echo.fbs --out echo-plugin-py
+pluginart gen plugin --lang typescript --name echo --schema schema/echo.fbs --out echo-plugin-ts
 ```
 
-The host injects exactly one of `PLUGIN_SOCKET` (Unix domain socket path) or `PLUGIN_ADDR` (TCP `host:port`) into the plugin process environment. The plugin listens on whichever is set, then writes `READY` to stdout. The host reads that line before dialling the connection.
+Generated Python and TypeScript plugin entrypoints import `serve` from the runtime package. Handler files stay focused on decoding `CallRequest` and encoding `CallResponse`.
 
-## 5. Implement the plugin
-
-Edit `transform-plugin/plugin.go`. The generated stub looks like this:
-
-```go
-package main
-
-import (
-    "context"
-    "fmt"
-)
-
-type PluginHandler struct{}
-
-func (h *PluginHandler) Handle(ctx context.Context, payload []byte) ([]byte, error) {
-    // TODO: decode payload and return response
-    return nil, fmt.Errorf("not implemented")
-}
-```
-
-`Handle` receives raw FlatBuffers `CallRequest` bytes and must return raw FlatBuffers `CallResponse` bytes. Use the generated helpers in `flatbuffers.go` to decode the request and encode the response. A complete implementation:
-
-```go
-func (h *PluginHandler) Handle(ctx context.Context, payload []byte) ([]byte, error) {
-    req := GetRootAsCallRequest(payload, 0)
-    switch req.PayloadType() {
-    case RequestPayloadExampleRequest:
-        var table ExampleRequest
-        req.Payload(&table)
-        result := strings.ToUpper(table.Input())
-        return buildExampleResponse(result), nil
-    default:
-        return nil, fmt.Errorf("unknown method %d", req.PayloadType())
-    }
-}
-```
-
-## 6. Configure the host
-
-Create `pluginart.toml` in your host application's working directory:
+## 4. Configure The Host
 
 ```toml
 version = 1
 
-[defaults]
-startup_timeout  = "5s"
-shutdown_timeout = "10s"
-health_interval  = "2s"
-max_restarts     = 5
-
 [[plugins]]
-name = "transform"
+name = "echo"
 type = "binary"
-path = "./transform-plugin/transform-plugin"
+path = "./echo-plugin-go/echo-plugin"
+contract_hash = "sha256:<hash from pluginart validate --schema schema/echo.fbs>"
 ```
 
-`type = "binary"` means the host execs the binary directly, injects `PLUGIN_SOCKET`, and waits for `READY`. The `path` is relative to the working directory when the host process runs.
+The runtime reads `pluginart.toml`, starts local plugins, performs the handshake, checks health, restarts binary plugins with backoff, and shuts them down.
 
-For available config fields see the full reference in `docs/config.md`.
-
-## 7. Run the example
-
-Build the plugin binary first:
+## 5. Run Examples
 
 ```bash
-cd transform-plugin
-go build -o transform-plugin .
-cd ..
+cd examples/plugin-go && go build -o plugin-go .
+cd ../host-go && go run .
+python ../host-py/main.py
+cd ../host-ts && npm install && npm run build && npm start
 ```
 
-Run the host:
-
-```bash
-go run ./cmd/myapp
-```
-
-The host starts the plugin binary, waits for `READY`, dials the socket, verifies the contract hash, and is ready to accept calls.
-
-For a fully working runnable version that skips FlatBuffers encoding (raw bytes only, to show the mechanics without the schema toolchain), see:
-
-- `examples/plugin-go/` - a minimal echo plugin
-- `examples/host-go/` - the matching host that calls it
-
-Build and run those:
-
-```bash
-# build the plugin
-cd examples/plugin-go && go build -o plugin-go . && cd ../..
-
-# run the host (it calls the plugin and prints the response)
-cd examples/host-go && go run .
-# echo response: HELLO FROM HOST
-```
-
-## Next steps
-
-**Docker mode** - run a plugin as a container without changing a line in the host. Set `type = "docker"` and `image = "yourimage:tag"` in `pluginart.toml`. The host manages the container lifecycle, reading `READY` from container stdout. TCP is the default transport for Docker (compatible with all platforms including macOS); Unix socket is available on Linux via `transport = "unix"`.
-
-**Remote mode** - connect to a plugin already running on another host. Set `type = "remote"` and `address = "host:port"`. No process lifecycle management applies; the host dials, handshakes, and health-checks over the live connection.
-
-**Multiple languages** - Python and TypeScript plugin generation (`pluginart gen plugin --lang python|typescript`) is planned for v0.2, along with Docker mode and a `pluginart validate` command.
+The Python and TypeScript examples keep FlatBuffers request/response construction visible so the current raw-byte client contract is explicit.

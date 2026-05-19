@@ -1,6 +1,6 @@
 # pluginart Wire Protocol
 
-This document is the normative specification for the pluginart binary wire protocol — the communication layer between a host process (`pkg/runtime`) and a plugin process over a Unix socket or TCP connection.
+This document is the normative specification for the pluginart binary wire protocol — the communication layer between a host runtime and a plugin process over a Unix socket or TCP connection. Go, Python, and TypeScript runtimes implement the same framing, handshake, call, and health-check behavior.
 
 ---
 
@@ -31,7 +31,7 @@ Every message — in both directions — is wrapped in a 9-byte header followed 
 
 Constraints:
 
-- Maximum payload size: **4 MiB** (4,194,304 bytes). Frames exceeding this limit are rejected and the connection is closed.
+- Maximum payload size: **4 MiB** (4,194,304 bytes). All runtimes must reject frames exceeding this limit and close or fail the connection.
 - An empty payload (`length = 0`) is valid for messages that carry no data.
 
 ---
