@@ -36,11 +36,11 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const path = __importStar(require("path"));
 const flatbuffers = __importStar(require("flatbuffers"));
 const plugin_runner_1 = require("./plugin_runner");
-const call_request_1 = require("./echo/echo/call-request");
-const call_response_1 = require("./echo/echo/call-response");
-const echo_request_1 = require("./echo/echo/echo-request");
-const echo_response_1 = require("./echo/echo/echo-response");
-const request_payload_1 = require("./echo/echo/request-payload");
+const call_request_1 = require("./echo/call-request");
+const call_response_1 = require("./echo/call-response");
+const echo_request_1 = require("./echo/echo-request");
+const echo_response_1 = require("./echo/echo-response");
+const request_payload_1 = require("./echo/request-payload");
 const DIR = path.resolve(__dirname, '../..');
 function buildEchoCallRequest(input) {
     const b = new flatbuffers.Builder(256);

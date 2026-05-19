@@ -1,12 +1,12 @@
 import * as path from 'path';
 import * as flatbuffers from 'flatbuffers';
 import { spawnPlugin, echo, kill } from './plugin_runner';
-import { CallRequest } from './echo/echo/call-request';
-import { CallResponse } from './echo/echo/call-response';
-import { EchoRequest } from './echo/echo/echo-request';
-import { EchoResponse } from './echo/echo/echo-response';
-import { RequestPayload } from './echo/echo/request-payload';
-import { ResponsePayload } from './echo/echo/response-payload';
+import { CallRequest } from './echo/call-request';
+import { CallResponse } from './echo/call-response';
+import { EchoRequest } from './echo/echo-request';
+import { EchoResponse } from './echo/echo-response';
+import { RequestPayload } from './echo/request-payload';
+import { ResponsePayload } from './echo/response-payload';
 
 const DIR = path.resolve(__dirname, '../..');
 

@@ -74,7 +74,7 @@ function parseHandshakeResponse(payload: Buffer): { ok: boolean; error: string }
   const okOff  = bb.__offset(pos, 4);
   const ok     = okOff ? bb.readInt8(pos + okOff) !== 0 : false;
   const errOff = bb.__offset(pos, 6);
-  const error  = errOff ? (bb.__string(pos + errOff) ?? '') : '';
+  const error  = errOff ? ((bb.__string(pos + errOff) as string) ?? '') : '';
   return { ok, error };
 }
 
@@ -82,7 +82,7 @@ function parseHandshakeRequest(payload: Buffer): string {
   const bb    = new flatbuffers.ByteBuffer(new Uint8Array(payload));
   const pos   = bb.readInt32(bb.position()) + bb.position();
   const chOff = bb.__offset(pos, 4);
-  return chOff ? (bb.__string(pos + chOff) ?? '') : '';
+  return chOff ? ((bb.__string(pos + chOff) as string) ?? '') : '';
 }
 
 function buildHandshakeResponse(ok: boolean, error = ''): Buffer {
