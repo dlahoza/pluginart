@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "pluginart"
-version = "0.2.0"
+version = "0.2.1"
 description = "Python runtime for pluginart hosts and plugins"
 readme = "README.md"
 requires-python = ">=3.11"
@@ -20,4 +20,14 @@ classifiers = [
 ]
 
 [tool.hatch.build.targets.wheel]
+ignore-vcs = true
 packages = ["pluginart"]
+
+[tool.hatch.build.targets.sdist]
+ignore-vcs = true
+only-include = [
+  "/pluginart",
+  "/tests",
+  "/README.md",
+  "/pyproject.toml",
+]

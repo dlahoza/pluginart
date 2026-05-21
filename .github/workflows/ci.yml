@@ -55,6 +55,31 @@ jobs:
       - run: python -m pip install -e runtimes/python build
       - run: python -m unittest discover -s runtimes/python/tests
       - run: cd runtimes/python && python -m build
+      - name: Check Python wheel contents
+        run: |
+          python - <<'PY'
+          import glob
+          import sys
+          import zipfile
+
+          wheels = glob.glob("runtimes/python/dist/*.whl")
+          if len(wheels) != 1:
+              sys.exit(f"expected one wheel, found {wheels}")
+
+          with zipfile.ZipFile(wheels[0]) as wheel:
+              names = set(wheel.namelist())
+
+          required = {
+              "pluginart/__init__.py",
+              "pluginart/manager.py",
+              "pluginart/protocol.py",
+              "pluginart/server.py",
+              "pluginart/py.typed",
+          }
+          missing = sorted(required - names)
+          if missing:
+              sys.exit(f"wheel is missing package files: {missing}")
+          PY
 
   typescript-runtime:
     name: TypeScript runtime

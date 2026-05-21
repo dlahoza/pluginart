@@ -139,7 +139,7 @@ const tsPackageJSONTmpl = `{
     "start": "node dist/plugin.js"
   },
   "dependencies": {
-    "pluginart": "0.2.0",
+    "pluginart": "0.2.1",
     "flatbuffers": "^25.2.10"
   },
   "devDependencies": {

@@ -41,6 +41,32 @@ jobs:
         if: steps.pypi-version.outputs.exists != 'true'
       - run: cd runtimes/python && python -m build
         if: steps.pypi-version.outputs.exists != 'true'
+      - name: Check Python wheel contents
+        if: steps.pypi-version.outputs.exists != 'true'
+        run: |
+          python - <<'PY'
+          import glob
+          import sys
+          import zipfile
+
+          wheels = glob.glob("runtimes/python/dist/*.whl")
+          if len(wheels) != 1:
+              sys.exit(f"expected one wheel, found {wheels}")
+
+          with zipfile.ZipFile(wheels[0]) as wheel:
+              names = set(wheel.namelist())
+
+          required = {
+              "pluginart/__init__.py",
+              "pluginart/manager.py",
+              "pluginart/protocol.py",
+              "pluginart/server.py",
+              "pluginart/py.typed",
+          }
+          missing = sorted(required - names)
+          if missing:
+              sys.exit(f"wheel is missing package files: {missing}")
+          PY
       - uses: pypa/gh-action-pypi-publish@release/v1
         if: steps.pypi-version.outputs.exists != 'true'
         with:
