@@ -154,7 +154,7 @@ def handle(payload: bytes) -> bytes:
     raise NotImplementedError
 `
 
-const pyRequirementsTmpl = `pluginart==0.2.1
+const pyRequirementsTmpl = `pluginart==0.2.2
 flatbuffers>=24.3.25
 `
 

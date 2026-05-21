@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "pluginart"
-version = "0.2.1"
+version = "0.2.2"
 description = "Python runtime for pluginart hosts and plugins"
 readme = "README.md"
 requires-python = ">=3.11"

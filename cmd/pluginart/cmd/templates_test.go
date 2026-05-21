@@ -167,8 +167,8 @@ func TestRenderSkeletonFileOverwritesWithFlag(t *testing.T) {
 }
 
 func TestGoPluginGoModUsesCurrentRuntimeVersion(t *testing.T) {
-	if !strings.Contains(pluginGomodTmpl, "github.com/dlahoza/pluginart v0.2.1") {
-		t.Fatalf("Go plugin go.mod template should use pluginart v0.2.1:\n%s", pluginGomodTmpl)
+	if !strings.Contains(pluginGomodTmpl, "github.com/dlahoza/pluginart v0.2.2") {
+		t.Fatalf("Go plugin go.mod template should use pluginart v0.2.2:\n%s", pluginGomodTmpl)
 	}
 }
 

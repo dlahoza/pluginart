@@ -170,7 +170,7 @@ node --expose-gc bench/typescript/dist/run-bench.js --duration 10s --json bench-
 | `v0.5` | Planned | Transport hardening: compression negotiation with LZ4/ZSTD and TLS support for remote mode, including mutual TLS options. |
 | `v0.6` | Planned | Performance: shared-memory fast path, runtime object pooling, and sender write coalescing. |
 
-The current release is `v0.2.1`. Field-level request/response builders, plugin registry/marketplace support, and languages beyond Go, Python, and TypeScript are not currently in scope.
+The current release is `v0.2.2`. Field-level request/response builders, plugin registry/marketplace support, and languages beyond Go, Python, and TypeScript are not currently in scope.
 
 ## License
 

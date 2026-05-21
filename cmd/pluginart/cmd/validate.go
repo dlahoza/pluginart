@@ -12,8 +12,9 @@ import (
 )
 
 var validateCmd = &cobra.Command{
-	Use:   "validate",
+	Use:   "validate [schema.fbs]",
 	Short: "Validate a schema or plugin configuration",
+	Args:  cobra.MaximumNArgs(1),
 	RunE:  runValidate,
 }
 
@@ -28,9 +29,12 @@ func init() {
 	rootCmd.AddCommand(validateCmd)
 }
 
-func runValidate(cmd *cobra.Command, _ []string) error {
+func runValidate(_ *cobra.Command, args []string) error {
+	if len(args) == 1 && validateFlagSchema == "" && validateFlagConfig == "" {
+		validateFlagSchema = args[0]
+	}
+
 	if validateFlagSchema == "" && validateFlagConfig == "" {
-		_ = cmd.Usage()
 		return fmt.Errorf("one of --schema or --config is required")
 	}
 
